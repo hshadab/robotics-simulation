@@ -303,19 +303,21 @@ export const WheeledRobot3D: React.FC<WheeledRobot3DProps> = ({
           ))}
         </group>
 
-        {/* Wheels with PBR */}
-        <Wheel
-          position={[0, -config.bodyHeight / 2 + 0.005, wheelZ + 0.008]}
-          rotation={state.leftWheelSpeed / 50}
-          radius={config.wheelRadius}
-          isLeft={true}
-        />
-        <Wheel
-          position={[0, -config.bodyHeight / 2 + 0.005, -wheelZ - 0.008]}
-          rotation={state.rightWheelSpeed / 50}
-          radius={config.wheelRadius}
-          isLeft={false}
-        />
+        {/* Wheels with PBR (4WD layout) */}
+        {[
+          { x: config.bodyLength / 2 - 0.02, z: wheelZ + 0.008, left: true },
+          { x: config.bodyLength / 2 - 0.02, z: -wheelZ - 0.008, left: false },
+          { x: -config.bodyLength / 2 + 0.02, z: wheelZ + 0.008, left: true },
+          { x: -config.bodyLength / 2 + 0.02, z: -wheelZ - 0.008, left: false },
+        ].map((wheel, idx) => (
+          <Wheel
+            key={idx}
+            position={[wheel.x, -config.bodyHeight / 2 + 0.005, wheel.z]}
+            rotation={(wheel.left ? state.leftWheelSpeed : state.rightWheelSpeed) / 50}
+            radius={config.wheelRadius}
+            isLeft={wheel.left}
+          />
+        ))}
     </group>
   );
 };
