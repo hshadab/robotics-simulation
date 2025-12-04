@@ -6,7 +6,6 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody, CuboidCollider, RapierRigidBody } from '@react-three/rapier';
 import { RoundedBox, Cylinder } from '@react-three/drei';
 import * as THREE from 'three';
 import type { WheeledRobotState, WheeledRobotConfig } from '../../types';
@@ -193,83 +192,22 @@ const UltrasonicSensor: React.FC<{
 export const WheeledRobot3D: React.FC<WheeledRobot3DProps> = ({
   state,
   config: configOverrides = {},
-  onStateChange,
 }) => {
   const config = { ...DEFAULT_CONFIG, ...configOverrides };
-  const bodyRef = useRef<RapierRigidBody>(null);
-  const prevState = useRef(state);
+  const groupRef = useRef<THREE.Group>(null);
 
   // Calculate wheel positions
   const wheelZ = config.wheelBase / 2;
 
-  // Physics simulation using kinematicPosition for better stability
-  useFrame((_, delta) => {
-    if (!bodyRef.current) return;
-
-    // Get current position
-    const pos = bodyRef.current.translation();
-    const bodyY = config.bodyHeight / 2 + config.wheelRadius;
-
-    // Convert wheel speeds to linear and angular velocity
-    // Differential drive kinematics
-    const leftSpeed = (state.leftWheelSpeed / 255) * config.maxSpeed;
-    const rightSpeed = (state.rightWheelSpeed / 255) * config.maxSpeed;
-
-    const linearVelocity = (leftSpeed + rightSpeed) / 2;
-    const angularVelocity = (rightSpeed - leftSpeed) / config.wheelBase;
-
-    // Get current heading from state (we'll update position based on this)
-    const headingRad = (state.heading * Math.PI) / 180;
-
-    // Calculate movement delta
-    const dx = linearVelocity * Math.sin(headingRad) * delta;
-    const dz = linearVelocity * Math.cos(headingRad) * delta;
-    const dHeading = angularVelocity * delta;
-
-    // Calculate new position
-    const newX = pos.x + dx;
-    const newZ = pos.z + dz;
-    const newHeading = state.heading + (dHeading * 180) / Math.PI;
-
-    // Set new kinematic position
-    bodyRef.current.setNextKinematicTranslation({
-      x: newX,
-      y: bodyY,
-      z: newZ,
-    });
-
-    // Set new rotation
-    const rotation = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(0, (newHeading * Math.PI) / 180, 0)
-    );
-    bodyRef.current.setNextKinematicRotation(rotation);
-
-    // Update state if callback provided
-    if (onStateChange) {
-      onStateChange({
-        position: { x: newX, y: bodyY, z: newZ },
-        heading: ((newHeading % 360) + 360) % 360,
-        velocity: linearVelocity,
-        angularVelocity: (angularVelocity * 180) / Math.PI,
-      });
-    }
-
-    prevState.current = state;
-  });
+  // Calculate body Y position
+  const bodyY = config.bodyHeight / 2 + config.wheelRadius;
 
   return (
-    <group>
-      {/* Main body - kinematicPosition for stable rendering */}
-      <RigidBody
-        ref={bodyRef}
-        type="kinematicPosition"
-        position={[state.position.x, config.bodyHeight / 2 + config.wheelRadius, state.position.z]}
-        rotation={[0, (state.heading * Math.PI) / 180, 0]}
-        colliders={false}
-      >
-        <CuboidCollider
-          args={[config.bodyLength / 2, config.bodyHeight / 2, config.bodyWidth / 2]}
-        />
+    <group
+      ref={groupRef}
+      position={[state.position.x, bodyY, state.position.z]}
+      rotation={[0, (state.heading * Math.PI) / 180, 0]}
+    >
 
         {/* Robot body */}
         <group>
@@ -387,7 +325,6 @@ export const WheeledRobot3D: React.FC<WheeledRobot3DProps> = ({
           radius={config.wheelRadius}
           isLeft={false}
         />
-      </RigidBody>
     </group>
   );
 };

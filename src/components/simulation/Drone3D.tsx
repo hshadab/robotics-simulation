@@ -6,7 +6,6 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody, CuboidCollider, RapierRigidBody } from '@react-three/rapier';
 import { RoundedBox, Cylinder, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import type { DroneState, DroneConfig } from '../../types';
@@ -232,77 +231,71 @@ export const Drone3D: React.FC<Drone3DProps> = ({
   onStateChange,
 }) => {
   const config = { ...DEFAULT_CONFIG, ...configOverrides };
-  const bodyRef = useRef<RapierRigidBody>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const posRef = useRef({ x: state.position.x, y: state.position.y, z: state.position.z });
 
   // Motor angles: FL, FR, BL, BR (45, -45, 135, -135 degrees)
   const motorAngles = [45, -45, 135, -135];
   const motorClockwise = [true, false, false, true]; // Alternating for stability
 
-  // Physics simulation - simplified for stability
+  // Convert rotation to radians for visual display
+  const rollRad = (state.rotation.x * Math.PI) / 180;
+  const pitchRad = (state.rotation.z * Math.PI) / 180;
+  const yawRad = (state.rotation.y * Math.PI) / 180;
+
+  // Calculate motor RPMs based on throttle (used for propeller animation)
+  const baseRPM = state.armed ? (state.throttle / 100) * 8000 : 0;
+  const motorsRPM: [number, number, number, number] = state.armed
+    ? [baseRPM, baseRPM, baseRPM, baseRPM]
+    : [0, 0, 0, 0];
+
+  // Update position based on controls
   useFrame(() => {
-    if (!bodyRef.current) return;
-
-    // Get current position
-    const pos = bodyRef.current.translation();
-
-    // Ground clamp - never go below ground level
-    const minHeight = 0.05; // Drone's resting height
+    const minHeight = 0.05;
 
     if (!state.armed) {
-      // When not armed, stay on ground at current XZ position
-      bodyRef.current.setNextKinematicTranslation({
-        x: state.position.x,
-        y: minHeight,
-        z: state.position.z,
-      });
+      // When not armed, stay on ground
+      if (posRef.current.y !== minHeight) {
+        posRef.current.y = minHeight;
+        if (onStateChange) {
+          onStateChange({ position: { ...posRef.current }, motorsRPM: [0, 0, 0, 0] });
+        }
+      }
       return;
     }
 
-    // Calculate target height based on throttle
-    // Throttle 0 = stay at current height (hover), throttle > 50 = rise, < 50 = descend
+    // Calculate vertical speed based on throttle (0-100)
+    // throttle 50 = hover, >50 = rise, <50 = descend
     const throttleNormalized = (state.throttle - 50) / 50; // -1 to 1
-    const verticalSpeed = throttleNormalized * 0.01; // Slow vertical movement
+    const verticalSpeed = throttleNormalized * 0.005; // Speed per frame
 
-    // Apply tilt for horizontal movement
-    const rollRad = (state.rotation.x * Math.PI) / 180;
-    const pitchRad = (state.rotation.z * Math.PI) / 180;
-    const yawRad = (state.rotation.y * Math.PI) / 180;
-
-    // Calculate horizontal velocity based on tilt
-    const tiltForce = 0.005;
-    const vx = Math.sin(pitchRad) * tiltForce * state.throttle;
-    const vz = -Math.sin(rollRad) * tiltForce * state.throttle;
+    // Calculate horizontal movement from tilt
+    const tiltForce = 0.002;
+    const vx = Math.sin(pitchRad) * tiltForce * (state.throttle / 50);
+    const vz = -Math.sin(rollRad) * tiltForce * (state.throttle / 50);
 
     // Landing mode - descend slowly
-    const vy = state.flightMode === 'land' ? -0.005 : verticalSpeed;
+    const vy = state.flightMode === 'land' ? -0.003 : verticalSpeed;
 
-    // Calculate new position
-    let newY = pos.y + vy;
+    // Update position
+    let newY = posRef.current.y + vy;
+    if (newY < minHeight) newY = minHeight;
+    if (newY > 2) newY = 2; // Max height
 
-    // Clamp to ground
-    if (newY < minHeight) {
-      newY = minHeight;
+    const newX = posRef.current.x + vx;
+    const newZ = posRef.current.z + vz;
+
+    // Only update if changed
+    if (newX !== posRef.current.x || newY !== posRef.current.y || newZ !== posRef.current.z) {
+      posRef.current = { x: newX, y: newY, z: newZ };
+      if (onStateChange) {
+        onStateChange({ position: { x: newX, y: newY, z: newZ } });
+      }
     }
 
-    // Apply new position (kinematic movement)
-    bodyRef.current.setNextKinematicTranslation({
-      x: pos.x + vx,
-      y: newY,
-      z: pos.z + vz,
-    });
-
-    // Apply rotation
-    const rotation = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(rollRad, yawRad, pitchRad)
-    );
-    bodyRef.current.setNextKinematicRotation(rotation);
-
-    // Update state callback
-    if (onStateChange) {
-      onStateChange({
-        position: { x: pos.x + vx, y: newY, z: pos.z + vz },
-        velocity: { x: vx, y: vy, z: vz },
-      });
+    // Update group position directly for smooth rendering
+    if (groupRef.current) {
+      groupRef.current.position.set(newX, newY, newZ);
     }
   });
 
@@ -314,15 +307,11 @@ export const Drone3D: React.FC<Drone3DProps> = ({
     : COLORS.led.disarmed;
 
   return (
-    <group>
-      <RigidBody
-        ref={bodyRef}
-        type="kinematicPosition"
-        position={[state.position.x, state.position.y, state.position.z]}
-        colliders={false}
-      >
-        <CuboidCollider args={[config.armLength, 0.02, config.armLength]} />
-
+    <group
+      ref={groupRef}
+      position={[state.position.x, state.position.y, state.position.z]}
+      rotation={[rollRad, yawRad, pitchRad]}
+    >
         <group>
           {/* Central body - carbon fiber */}
           <RoundedBox args={[config.bodySize, 0.025, config.bodySize]} radius={0.008} castShadow>
@@ -404,7 +393,7 @@ export const Drone3D: React.FC<Drone3DProps> = ({
               key={i}
               angle={angle}
               length={config.armLength}
-              motorRPM={state.motorsRPM[i]}
+              motorRPM={motorsRPM[i]}
               propellerSize={config.propellerSize}
               clockwise={motorClockwise[i]}
             />
@@ -429,7 +418,6 @@ export const Drone3D: React.FC<Drone3DProps> = ({
             </group>
           ))}
         </group>
-      </RigidBody>
 
       {/* Shadow/ground indicator when flying */}
       {state.armed && state.position.y > 0.1 && (

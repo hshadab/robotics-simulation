@@ -29,6 +29,7 @@ interface RobotArm3DProps {
   wheeledRobot?: WheeledRobotState;
   drone?: DroneState;
   humanoid?: HumanoidState;
+  onDroneStateChange?: (state: Partial<DroneState>) => void;
 }
 
 // Default wheeled robot state
@@ -133,6 +134,7 @@ export const RobotArm3D: React.FC<RobotArm3DProps> = ({
   wheeledRobot = DEFAULT_WHEELED_STATE,
   drone = DEFAULT_DRONE_STATE,
   humanoid = DEFAULT_HUMANOID_STATE,
+  onDroneStateChange,
 }) => {
   const defaultSensorViz: SensorVisualization = {
     showUltrasonicBeam: true,
@@ -329,7 +331,7 @@ export const RobotArm3D: React.FC<RobotArm3DProps> = ({
           )}
 
           {activeRobotType === 'drone' && (
-            <Drone3D state={drone} />
+            <Drone3D state={drone} onStateChange={onDroneStateChange} />
           )}
 
           {activeRobotType === 'humanoid' && (

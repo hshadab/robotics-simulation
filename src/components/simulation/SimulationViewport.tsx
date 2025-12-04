@@ -23,6 +23,7 @@ export const SimulationViewport: React.FC = () => {
     wheeledRobot,
     drone,
     humanoid,
+    setDrone,
   } = useAppStore();
   const [view3D, setView3D] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
@@ -121,6 +122,7 @@ export const SimulationViewport: React.FC = () => {
               wheeledRobot={wheeledRobot}
               drone={drone}
               humanoid={humanoid}
+              onDroneStateChange={setDrone}
             />
           </Suspense>
         ) : (
