@@ -6,7 +6,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   LineChart,
-  TrendingUp,
   Pause,
   Play,
   Trash2,
@@ -298,7 +297,7 @@ function drawAxisLabels(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  minTime: number,
+  _minTime: number,
   maxTime: number,
   minValue: number,
   maxValue: number

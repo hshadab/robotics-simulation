@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useSensorSimulation } from '../../hooks';
+import type { SensorReading, JointState } from '../../types';
 
 type SensorTab = 'basic' | 'motion' | 'position';
 
@@ -91,8 +92,8 @@ export const SensorPanel: React.FC = () => {
 
 // Basic Sensors Tab
 const BasicSensors: React.FC<{
-  sensors: ReturnType<typeof useAppStore>['sensors'];
-  joints: ReturnType<typeof useAppStore>['joints'];
+  sensors: SensorReading;
+  joints: JointState;
 }> = ({ sensors, joints }) => (
   <div className="space-y-3">
     {/* Gripper */}
@@ -167,7 +168,7 @@ const BasicSensors: React.FC<{
 
 // Motion Sensors Tab
 const MotionSensors: React.FC<{
-  sensors: ReturnType<typeof useAppStore>['sensors'];
+  sensors: SensorReading;
 }> = ({ sensors }) => (
   <div className="space-y-3">
     {/* IMU / Orientation */}
@@ -252,7 +253,7 @@ const MotionSensors: React.FC<{
 
 // Position Sensors Tab
 const PositionSensors: React.FC<{
-  sensors: ReturnType<typeof useAppStore>['sensors'];
+  sensors: SensorReading;
 }> = ({ sensors }) => (
   <div className="space-y-3">
     {/* GPS Position */}

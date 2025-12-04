@@ -23,7 +23,7 @@ export const DEFAULT_WHEELED_STATE: WheeledRobotState = {
 
 export const createWheeledRobotAPI = (
   addConsoleMessage: (msg: ConsoleMessage) => void,
-  onStop?: () => void
+  _onStop?: () => void
 ) => {
   const print = (...args: unknown[]) => {
     const message = args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');

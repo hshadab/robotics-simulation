@@ -5,13 +5,11 @@
 
 import React, { useState } from 'react';
 import {
-  Bot,
   Car,
   Plane,
   ChevronDown,
   ChevronUp,
   GripHorizontal,
-  Cpu,
 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import type { ActiveRobotType } from '../../types';

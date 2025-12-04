@@ -5,7 +5,6 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import * as THREE from 'three';
-import { RoundedBox } from '@react-three/drei';
 import {
   URDFParser,
   urdfGeometryToThree,

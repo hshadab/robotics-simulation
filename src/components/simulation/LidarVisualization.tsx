@@ -7,7 +7,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { useLidarSimulation, DEFAULT_LIDAR_CONFIG } from '../../hooks/useLidarSimulation';
-import type { LidarReading, LidarConfig } from '../../types';
+import type { LidarReading, LidarConfig, LidarPoint } from '../../types';
 
 interface LidarVisualization3DProps {
   config?: Partial<LidarConfig>;
@@ -44,7 +44,6 @@ export const LidarVisualization3D: React.FC<LidarVisualization3DProps> = ({
     return lidarData.points
       .filter((_, i) => i % 3 === 0) // Only show every 3rd ray for performance
       .map((point, i) => {
-        const angleRad = (point.angle * Math.PI) / 180;
         const origin = new THREE.Vector3(0, fullConfig.mountHeight, 0);
         const end = new THREE.Vector3(point.x, fullConfig.mountHeight, point.z);
 
@@ -212,6 +211,10 @@ export const LidarPanel: React.FC<LidarPanelProps> = ({
   const [lidarData, setLidarData] = useState<LidarReading | null>(null);
   const [showPanel, setShowPanel] = useState(true);
 
+  // These are used below but not currently connected to the Canvas context
+  void setLidarData;
+  void onToggle;
+
   // This would need to be called from within the Canvas context
   // For now, we'll pass data through props or context
 
@@ -249,7 +252,7 @@ export const LidarPanel: React.FC<LidarPanelProps> = ({
           <LidarMinimap lidarData={lidarData} size={140} />
           <div className="mt-2 text-xs text-slate-500">
             {lidarData
-              ? `${lidarData.points.filter((p) => p.hit).length} hits`
+              ? `${lidarData.points.filter((p: LidarPoint) => p.hit).length} hits`
               : 'No data'}
           </div>
         </div>

@@ -58,7 +58,6 @@ export const useLidarSimulation = (
   // Perform a single lidar scan
   const performScan = useCallback((): LidarReading => {
     const points: LidarPoint[] = [];
-    const baseYawRad = (joints.base * Math.PI) / 180;
 
     // Lidar origin at base of robot
     const origin = new THREE.Vector3(0, fullConfig.mountHeight, 0);

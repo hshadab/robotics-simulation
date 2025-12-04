@@ -3,6 +3,9 @@ import { Canvas } from '@react-three/fiber';
 import {
   OrbitControls,
   PerspectiveCamera,
+  Environment,
+  ContactShadows,
+  Lightformer,
 } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -147,8 +150,11 @@ export const RobotArm3D: React.FC<RobotArm3DProps> = ({
     rendererRef.current = gl;
     const canvas = gl.domElement;
 
-    gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // Reduce GPU pressure to prevent context loss
+    gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
     gl.shadowMap.type = THREE.BasicShadowMap;
+    gl.shadowMap.autoUpdate = false;
+    gl.shadowMap.needsUpdate = true;
 
     canvas.addEventListener('webglcontextlost', (event) => {
       event.preventDefault();
@@ -220,39 +226,95 @@ export const RobotArm3D: React.FC<RobotArm3DProps> = ({
     <div ref={canvasContainerRef} className="w-full h-full rounded-lg overflow-hidden">
       <Canvas
         key={canvasKey}
-        shadows="basic"
+        shadows
         dpr={[1, 1.5]}
         gl={{
           antialias: true,
           alpha: false,
           powerPreference: 'default',
           failIfMajorPerformanceCaveat: false,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.1,
+          preserveDrawingBuffer: true,
         }}
         onCreated={handleCreated}
       >
-        <color attach="background" args={['#1e293b']} />
-        <fog attach="fog" args={['#1e293b', 0.8, 2.5]} />
+        <color attach="background" args={['#0f172a']} />
 
-        <PerspectiveCamera makeDefault position={getCameraPosition()} fov={50} />
+        <PerspectiveCamera makeDefault position={getCameraPosition()} fov={45} />
         <OrbitControls
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
-          minDistance={0.2}
+          minDistance={0.15}
           maxDistance={2}
           target={getCameraTarget()}
         />
 
-        <ambientLight intensity={0.6} />
+        {/* Studio lighting environment for PBR reflections */}
+        <Environment resolution={256}>
+          <group rotation={[-Math.PI / 3, 0, 0]}>
+            <Lightformer
+              form="circle"
+              intensity={4}
+              rotation-x={Math.PI / 2}
+              position={[0, 5, -2]}
+              scale={3}
+            />
+            <Lightformer
+              form="circle"
+              intensity={2}
+              rotation-y={Math.PI / 2}
+              position={[-5, 1, -1]}
+              scale={2}
+            />
+            <Lightformer
+              form="ring"
+              color="#4060ff"
+              intensity={1}
+              rotation-y={Math.PI / 2}
+              position={[3, 2, 2]}
+              scale={2}
+            />
+          </group>
+        </Environment>
+
+        {/* Key light */}
         <directionalLight
-          position={[5, 10, 5]}
-          intensity={1}
+          position={[5, 8, 5]}
+          intensity={2}
           castShadow
-          shadow-mapSize={[512, 512]}
+          shadow-mapSize={[1024, 1024]}
+          shadow-bias={-0.0001}
+        >
+          <orthographicCamera attach="shadow-camera" args={[-1, 1, 1, -1, 0.1, 20]} />
+        </directionalLight>
+
+        {/* Fill light */}
+        <directionalLight position={[-3, 4, -2]} intensity={0.8} color="#a0c4ff" />
+
+        {/* Rim light */}
+        <directionalLight position={[0, 3, -5]} intensity={0.6} color="#ffd6a5" />
+
+        {/* Ambient for shadow fill */}
+        <ambientLight intensity={0.15} />
+
+        {/* Contact shadows for grounding - all robot types */}
+        <ContactShadows
+          position={[
+            activeRobotType === 'wheeled' ? wheeledRobot.position.x :
+            activeRobotType === 'drone' ? drone.position.x : 0,
+            0,
+            activeRobotType === 'wheeled' ? wheeledRobot.position.z :
+            activeRobotType === 'drone' ? drone.position.z : 0
+          ]}
+          opacity={activeRobotType === 'drone' && drone.position.y > 0.1 ? 0.3 : 0.5}
+          scale={activeRobotType === 'humanoid' ? 1.5 : 1}
+          blur={2}
+          far={activeRobotType === 'humanoid' ? 1 : 0.5}
+          resolution={256}
+          color="#000000"
         />
-        <directionalLight position={[-3, 5, -3]} intensity={0.4} />
-        <directionalLight position={[0, 5, 5]} intensity={0.3} />
-        <hemisphereLight args={['#94a3b8', '#475569', 0.5]} />
 
         <Physics gravity={[0, -9.81, 0]} timeStep={1/60}>
           <FloorCollider />

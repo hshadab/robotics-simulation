@@ -37,16 +37,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       >
         <div className="text-sm whitespace-pre-wrap">{message.content}</div>
 
-        {/* Code block if generated */}
-        {message.codeGenerated && (
-          <div className="mt-2 p-2 bg-slate-900/50 rounded-lg">
-            <pre className="text-xs text-slate-300 font-mono overflow-x-auto">
-              {message.codeGenerated.slice(0, 200)}
-              {message.codeGenerated.length > 200 && '...'}
-            </pre>
-          </div>
-        )}
-
         {/* Timestamp */}
         <div
           className={`text-[10px] mt-1 ${

@@ -4,8 +4,8 @@
  */
 
 import React, { useRef, useMemo } from 'react';
-import { useFrame, useThree, createPortal } from '@react-three/fiber';
-import { useFBO, PerspectiveCamera, OrthographicCamera } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useFBO } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAppStore } from '../../stores/useAppStore';
 import type { JointState, RobotCameraConfig } from '../../types';
@@ -199,8 +199,9 @@ export const RobotCameraOverlay: React.FC<RobotCameraOverlayProps> = ({
     'bottom-right': 'bottom-14 right-3',
   };
 
-  // Calculate view direction for display
-  const { lookAt } = calculateCameraTransform(joints, cameraPosition);
+  // Calculate view direction for display (for future use in HUD overlay)
+  const _cameraTransform = calculateCameraTransform(joints, cameraPosition);
+  void _cameraTransform;
 
   return (
     <div

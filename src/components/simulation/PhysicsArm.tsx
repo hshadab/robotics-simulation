@@ -9,17 +9,61 @@ interface PhysicsArmProps {
   joints: JointState;
 }
 
-// Material colors
-const COLORS = {
-  aluminum: '#C8CED6',
-  servoBlue: '#1E5FAB',
-  servoLight: '#2B74C4',
-  blackPlastic: '#2A2A2A',
-  bearing: '#4A4A4A',
-  gripperPad: '#E65C00',
+// PBR material property configurations (not instances - to avoid disposal issues)
+const MATERIALS = {
+  aluminum: {
+    color: '#d4d8dc',
+    metalness: 0.95,
+    roughness: 0.35,
+    envMapIntensity: 1.2,
+    clearcoat: 0.1,
+    clearcoatRoughness: 0.4,
+  },
+  servoBlue: {
+    color: '#1a4a8a',
+    metalness: 0.1,
+    roughness: 0.3,
+    envMapIntensity: 1.0,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.15,
+  },
+  servoLight: {
+    color: '#2860a8',
+    metalness: 0.15,
+    roughness: 0.35,
+    envMapIntensity: 0.9,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.2,
+  },
+  blackPlastic: {
+    color: '#1a1a1a',
+    metalness: 0.0,
+    roughness: 0.6,
+    envMapIntensity: 0.5,
+    clearcoat: 0.2,
+    clearcoatRoughness: 0.6,
+  },
+  bearing: {
+    color: '#606060',
+    metalness: 0.98,
+    roughness: 0.15,
+    envMapIntensity: 1.8,
+  },
+  gripperPad: {
+    color: '#e05500',
+    metalness: 0.0,
+    roughness: 0.85,
+    envMapIntensity: 0.3,
+  },
+  chrome: {
+    color: '#ffffff',
+    metalness: 1.0,
+    roughness: 0.05,
+    envMapIntensity: 2.5,
+  },
 };
 
-// Servo component with inline materials
+// Servo component with inline PBR materials (avoids disposal issues)
 const Servo: React.FC<{
   position: [number, number, number];
   rotation?: [number, number, number];
@@ -27,18 +71,30 @@ const Servo: React.FC<{
 }> = ({ position, rotation = [0, 0, 0], scale = 1 }) => {
   return (
     <group position={position} rotation={rotation} scale={scale}>
-      <RoundedBox args={[0.028, 0.04, 0.024]} radius={0.002} position={[0, 0, 0]}>
-        <meshStandardMaterial color={COLORS.servoBlue} metalness={0.3} roughness={0.6} />
+      {/* Main servo body */}
+      <RoundedBox args={[0.028, 0.04, 0.024]} radius={0.003} position={[0, 0, 0]} castShadow receiveShadow>
+        <meshPhysicalMaterial {...MATERIALS.servoBlue} />
       </RoundedBox>
-      <mesh position={[0, 0.018, 0]}>
-        <boxGeometry args={[0.024, 0.004, 0.02]} />
-        <meshStandardMaterial color={COLORS.servoLight} metalness={0.3} roughness={0.5} />
+      {/* Servo horn */}
+      <mesh position={[0, 0.018, 0]} castShadow>
+        <cylinderGeometry args={[0.008, 0.01, 0.004, 16]} />
+        <meshPhysicalMaterial {...MATERIALS.servoLight} />
+      </mesh>
+      {/* Center screw */}
+      <mesh position={[0, 0.0205, 0]} castShadow>
+        <cylinderGeometry args={[0.002, 0.002, 0.002, 8]} />
+        <meshPhysicalMaterial {...MATERIALS.chrome} />
+      </mesh>
+      {/* Wire exit detail */}
+      <mesh position={[0, -0.018, -0.01]} castShadow>
+        <boxGeometry args={[0.008, 0.006, 0.004]} />
+        <meshPhysicalMaterial {...MATERIALS.blackPlastic} />
       </mesh>
     </group>
   );
 };
 
-// Bracket component with inline materials
+// Bracket component with inline PBR materials
 const Bracket: React.FC<{
   length: number;
   width?: number;
@@ -48,9 +104,18 @@ const Bracket: React.FC<{
 }> = ({ length, width = 0.026, height = 0.006, position, rotation = [0, 0, 0] }) => {
   return (
     <group position={position} rotation={rotation}>
-      <RoundedBox args={[length, height, width]} radius={0.002}>
-        <meshStandardMaterial color={COLORS.aluminum} metalness={0.7} roughness={0.4} />
+      <RoundedBox args={[length, height, width]} radius={0.0015} castShadow receiveShadow>
+        <meshPhysicalMaterial {...MATERIALS.aluminum} />
       </RoundedBox>
+      {/* Mounting holes detail */}
+      <mesh position={[length * 0.35, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.002, 0.002, height + 0.001, 8]} />
+        <meshPhysicalMaterial {...MATERIALS.bearing} />
+      </mesh>
+      <mesh position={[-length * 0.35, 0, 0]} castShadow>
+        <cylinderGeometry args={[0.002, 0.002, height + 0.001, 8]} />
+        <meshPhysicalMaterial {...MATERIALS.bearing} />
+      </mesh>
     </group>
   );
 };
@@ -167,33 +232,43 @@ export const PhysicsArm: React.FC<PhysicsArmProps> = ({ joints }) => {
 
   return (
     <group>
-      {/* Static base */}
+      {/* Static base - textured black plastic */}
       <RigidBody type="fixed" position={[0, 0.005, 0]}>
         <CylinderCollider args={[0.005, 0.06]} />
-        <mesh>
-          <cylinderGeometry args={[0.06, 0.065, 0.01, 32]} />
-          <meshStandardMaterial color={COLORS.blackPlastic} metalness={0.1} roughness={0.8} />
+        <mesh castShadow receiveShadow>
+          <cylinderGeometry args={[0.06, 0.068, 0.01, 48]} />
+          <meshPhysicalMaterial {...MATERIALS.blackPlastic} />
+        </mesh>
+        {/* Decorative ring */}
+        <mesh position={[0, 0.003, 0]} castShadow>
+          <torusGeometry args={[0.058, 0.002, 8, 48]} />
+          <meshPhysicalMaterial {...MATERIALS.chrome} />
         </mesh>
       </RigidBody>
 
-      {/* Bearing ring */}
-      <mesh position={[0, 0.012, 0]}>
-        <cylinderGeometry args={[0.05, 0.055, 0.008, 32]} />
-        <meshStandardMaterial color={COLORS.bearing} metalness={0.8} roughness={0.3} />
+      {/* Bearing ring - polished steel */}
+      <mesh position={[0, 0.012, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.05, 0.055, 0.008, 48]} />
+        <meshPhysicalMaterial {...MATERIALS.bearing} />
       </mesh>
 
       {/* Rotating base tower - kinematic */}
       <RigidBody ref={baseRef} type="kinematicPosition" position={[0, 0.045, 0]}>
         <CuboidCollider args={[0.025, 0.02, 0.02]} />
-        <mesh>
-          <boxGeometry args={[0.05, 0.04, 0.04]} />
-          <meshStandardMaterial color={COLORS.aluminum} metalness={0.7} roughness={0.4} />
-        </mesh>
+        <RoundedBox args={[0.05, 0.04, 0.04]} radius={0.003} castShadow receiveShadow>
+          <meshPhysicalMaterial {...MATERIALS.aluminum} />
+        </RoundedBox>
         <Servo position={[0, 0.025, 0]} scale={1.2} />
-        <mesh position={[0, 0.055, 0]}>
-          <boxGeometry args={[0.06, 0.05, 0.045]} />
-          <meshStandardMaterial color={COLORS.aluminum} metalness={0.7} roughness={0.4} />
-        </mesh>
+        <RoundedBox args={[0.06, 0.05, 0.045]} radius={0.004} position={[0, 0.055, 0]} castShadow receiveShadow>
+          <meshPhysicalMaterial {...MATERIALS.aluminum} />
+        </RoundedBox>
+        {/* Ventilation slots detail */}
+        {[-0.015, 0, 0.015].map((z, i) => (
+          <mesh key={i} position={[0.031, 0.055, z]} castShadow>
+            <boxGeometry args={[0.002, 0.03, 0.006]} />
+            <meshPhysicalMaterial {...MATERIALS.blackPlastic} />
+          </mesh>
+        ))}
       </RigidBody>
 
       {/* Upper arm - kinematic */}
@@ -222,39 +297,47 @@ export const PhysicsArm: React.FC<PhysicsArmProps> = ({ joints }) => {
           <Bracket length={wristLength} width={0.018} height={0.005} position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]} />
         </group>
         {/* Gripper mount */}
-        <mesh position={[0, wristLength, 0]}>
-          <boxGeometry args={[0.028, 0.015, 0.02]} />
-          <meshStandardMaterial color={COLORS.bearing} metalness={0.5} roughness={0.6} />
-        </mesh>
-        <mesh position={[0, wristLength + 0.006, 0]}>
-          <boxGeometry args={[0.02, 0.012, 0.016]} />
-          <meshStandardMaterial color={COLORS.servoBlue} metalness={0.3} roughness={0.6} />
-        </mesh>
+        <RoundedBox args={[0.028, 0.015, 0.02]} radius={0.002} position={[0, wristLength, 0]} castShadow receiveShadow>
+          <meshPhysicalMaterial {...MATERIALS.bearing} />
+        </RoundedBox>
+        <RoundedBox args={[0.02, 0.012, 0.016]} radius={0.002} position={[0, wristLength + 0.006, 0]} castShadow receiveShadow>
+          <meshPhysicalMaterial {...MATERIALS.servoBlue} />
+        </RoundedBox>
       </RigidBody>
 
       {/* Left finger - kinematic, for physics interaction */}
       <RigidBody ref={leftFingerRef} type="kinematicPosition" position={[0.02, baseHeight + upperArmLength + forearmLength + wristLength, 0]}>
         <CuboidCollider args={[0.003, 0.025, 0.004]} position={[0, 0.018, 0]} />
-        <mesh position={[0, 0.018, 0]}>
-          <boxGeometry args={[0.006, 0.036, 0.008]} />
-          <meshStandardMaterial color={COLORS.aluminum} metalness={0.7} roughness={0.4} />
+        <RoundedBox args={[0.006, 0.036, 0.008]} radius={0.001} position={[0, 0.018, 0]} castShadow receiveShadow>
+          <meshPhysicalMaterial {...MATERIALS.aluminum} />
+        </RoundedBox>
+        {/* Rubber grip pad */}
+        <mesh position={[0, 0.034, 0]} castShadow>
+          <sphereGeometry args={[0.007, 16, 16]} />
+          <meshPhysicalMaterial {...MATERIALS.gripperPad} />
         </mesh>
-        <mesh position={[0, 0.034, 0]}>
-          <sphereGeometry args={[0.006, 12, 12]} />
-          <meshStandardMaterial color={COLORS.gripperPad} metalness={0.0} roughness={0.9} />
+        {/* Inner grip texture */}
+        <mesh position={[-0.003, 0.034, 0]} castShadow>
+          <boxGeometry args={[0.002, 0.01, 0.006]} />
+          <meshPhysicalMaterial {...MATERIALS.gripperPad} />
         </mesh>
       </RigidBody>
 
       {/* Right finger - kinematic, for physics interaction */}
       <RigidBody ref={rightFingerRef} type="kinematicPosition" position={[-0.02, baseHeight + upperArmLength + forearmLength + wristLength, 0]}>
         <CuboidCollider args={[0.003, 0.025, 0.004]} position={[0, 0.018, 0]} />
-        <mesh position={[0, 0.018, 0]}>
-          <boxGeometry args={[0.006, 0.036, 0.008]} />
-          <meshStandardMaterial color={COLORS.aluminum} metalness={0.7} roughness={0.4} />
+        <RoundedBox args={[0.006, 0.036, 0.008]} radius={0.001} position={[0, 0.018, 0]} castShadow receiveShadow>
+          <meshPhysicalMaterial {...MATERIALS.aluminum} />
+        </RoundedBox>
+        {/* Rubber grip pad */}
+        <mesh position={[0, 0.034, 0]} castShadow>
+          <sphereGeometry args={[0.007, 16, 16]} />
+          <meshPhysicalMaterial {...MATERIALS.gripperPad} />
         </mesh>
-        <mesh position={[0, 0.034, 0]}>
-          <sphereGeometry args={[0.006, 12, 12]} />
-          <meshStandardMaterial color={COLORS.gripperPad} metalness={0.0} roughness={0.9} />
+        {/* Inner grip texture */}
+        <mesh position={[0.003, 0.034, 0]} castShadow>
+          <boxGeometry args={[0.002, 0.01, 0.006]} />
+          <meshPhysicalMaterial {...MATERIALS.gripperPad} />
         </mesh>
       </RigidBody>
     </group>

@@ -13,7 +13,7 @@ let shouldStop = false;
 
 export const createDroneAPI = (
   addConsoleMessage: (msg: ConsoleMessage) => void,
-  onStop?: () => void
+  _onStop?: () => void
 ) => {
   const print = (...args: unknown[]) => {
     const message = args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');

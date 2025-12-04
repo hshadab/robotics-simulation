@@ -213,7 +213,7 @@ export class URDFParser {
     }
 
     const textureEl = element.querySelector('texture');
-    const texture = textureEl?.getAttribute('filename');
+    const texture = textureEl?.getAttribute('filename') ?? undefined;
 
     return { name, color, texture };
   }

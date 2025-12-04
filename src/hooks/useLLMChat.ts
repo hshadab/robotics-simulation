@@ -238,15 +238,178 @@ export const useLLMChat = () => {
   return { sendMessage };
 };
 
-// Arm responses (existing)
+// Parse movement amount from message (e.g., "30 degrees", "a lot", "slightly")
+function parseAmount(message: string): number {
+  const degreeMatch = message.match(/(\d+)\s*(degrees?|deg|°)/i);
+  if (degreeMatch) return parseInt(degreeMatch[1]);
+
+  if (message.includes('little') || message.includes('slight') || message.includes('bit')) return 15;
+  if (message.includes('lot') || message.includes('much') || message.includes('far')) return 60;
+  if (message.includes('all the way') || message.includes('fully') || message.includes('max')) return 90;
+
+  return 30; // default movement amount
+}
+
+// Arm responses - now handles arbitrary natural language commands
 async function simulateArmResponse(
   message: string,
   currentJoints: JointState
 ): Promise<LLMResponse> {
-  await new Promise((r) => setTimeout(r, 800 + Math.random() * 500));
+  await new Promise((r) => setTimeout(r, 500 + Math.random() * 300));
   const lowerMessage = message.toLowerCase();
+  const amount = parseAmount(lowerMessage);
 
-  if (lowerMessage.includes('wave') || lowerMessage.includes('hello')) {
+  // === DIRECTIONAL COMMANDS ===
+
+  // Left/Right = Base rotation
+  if (lowerMessage.includes('left') && !lowerMessage.includes('elbow')) {
+    const targetBase = Math.min(currentJoints.base + amount, 135);
+    return {
+      action: 'move',
+      joints: { base: targetBase },
+      description: `Rotating base left by ${amount}° to ${targetBase.toFixed(0)}°.`,
+      code: `setBase(${targetBase.toFixed(0)}); // Rotate left`,
+    };
+  }
+
+  if (lowerMessage.includes('right') && !lowerMessage.includes('elbow')) {
+    const targetBase = Math.max(currentJoints.base - amount, -135);
+    return {
+      action: 'move',
+      joints: { base: targetBase },
+      description: `Rotating base right by ${amount}° to ${targetBase.toFixed(0)}°.`,
+      code: `setBase(${targetBase.toFixed(0)}); // Rotate right`,
+    };
+  }
+
+  // Up/Down = Shoulder movement
+  if (lowerMessage.includes('up') || lowerMessage.includes('raise') || lowerMessage.includes('lift')) {
+    const targetShoulder = Math.min(currentJoints.shoulder + amount, 90);
+    return {
+      action: 'move',
+      joints: { shoulder: targetShoulder },
+      description: `Raising shoulder up by ${amount}° to ${targetShoulder.toFixed(0)}°.`,
+      code: `setShoulder(${targetShoulder.toFixed(0)}); // Move up`,
+    };
+  }
+
+  if (lowerMessage.includes('down') || lowerMessage.includes('lower')) {
+    const targetShoulder = Math.max(currentJoints.shoulder - amount, -90);
+    return {
+      action: 'move',
+      joints: { shoulder: targetShoulder },
+      description: `Lowering shoulder down by ${amount}° to ${targetShoulder.toFixed(0)}°.`,
+      code: `setShoulder(${targetShoulder.toFixed(0)}); // Move down`,
+    };
+  }
+
+  // Forward/Back = Elbow extension/retraction
+  if (lowerMessage.includes('forward') || lowerMessage.includes('extend') || lowerMessage.includes('out') || lowerMessage.includes('reach')) {
+    const targetElbow = Math.max(currentJoints.elbow - amount, -135);
+    return {
+      action: 'move',
+      joints: { elbow: targetElbow, shoulder: Math.min(currentJoints.shoulder + 10, 90) },
+      description: `Extending arm forward. Elbow to ${targetElbow.toFixed(0)}°.`,
+      code: `setElbow(${targetElbow.toFixed(0)}); // Extend forward`,
+    };
+  }
+
+  if (lowerMessage.includes('back') || lowerMessage.includes('retract') || lowerMessage.includes('in')) {
+    const targetElbow = Math.min(currentJoints.elbow + amount, 45);
+    return {
+      action: 'move',
+      joints: { elbow: targetElbow },
+      description: `Retracting arm back. Elbow to ${targetElbow.toFixed(0)}°.`,
+      code: `setElbow(${targetElbow.toFixed(0)}); // Retract back`,
+    };
+  }
+
+  // === JOINT-SPECIFIC COMMANDS ===
+
+  // Base rotation
+  if (lowerMessage.includes('base') || lowerMessage.includes('rotate') || lowerMessage.includes('turn') || lowerMessage.includes('spin')) {
+    let targetBase = currentJoints.base;
+    if (lowerMessage.includes('clock')) targetBase = currentJoints.base - amount;
+    else if (lowerMessage.includes('counter')) targetBase = currentJoints.base + amount;
+    else targetBase = currentJoints.base + (Math.random() > 0.5 ? amount : -amount);
+    targetBase = Math.max(-135, Math.min(135, targetBase));
+    return {
+      action: 'move',
+      joints: { base: targetBase },
+      description: `Rotating base to ${targetBase.toFixed(0)}°.`,
+      code: `setBase(${targetBase.toFixed(0)});`,
+    };
+  }
+
+  // Shoulder
+  if (lowerMessage.includes('shoulder')) {
+    let targetShoulder = currentJoints.shoulder;
+    if (lowerMessage.includes('up')) targetShoulder = Math.min(currentJoints.shoulder + amount, 90);
+    else if (lowerMessage.includes('down')) targetShoulder = Math.max(currentJoints.shoulder - amount, -90);
+    else targetShoulder = amount; // absolute position
+    return {
+      action: 'move',
+      joints: { shoulder: targetShoulder },
+      description: `Moving shoulder to ${targetShoulder.toFixed(0)}°.`,
+      code: `setShoulder(${targetShoulder.toFixed(0)});`,
+    };
+  }
+
+  // Elbow
+  if (lowerMessage.includes('elbow')) {
+    let targetElbow = currentJoints.elbow;
+    if (lowerMessage.includes('bend') || lowerMessage.includes('fold')) {
+      targetElbow = Math.min(currentJoints.elbow + amount, 45);
+    } else if (lowerMessage.includes('straight') || lowerMessage.includes('extend')) {
+      targetElbow = Math.max(currentJoints.elbow - amount, -135);
+    } else {
+      targetElbow = -amount; // negative for extension
+    }
+    return {
+      action: 'move',
+      joints: { elbow: targetElbow },
+      description: `Moving elbow to ${targetElbow.toFixed(0)}°.`,
+      code: `setElbow(${targetElbow.toFixed(0)});`,
+    };
+  }
+
+  // Wrist
+  if (lowerMessage.includes('wrist') || lowerMessage.includes('tilt')) {
+    let targetWrist = currentJoints.wrist;
+    if (lowerMessage.includes('up')) targetWrist = Math.min(currentJoints.wrist + amount, 90);
+    else if (lowerMessage.includes('down')) targetWrist = Math.max(currentJoints.wrist - amount, -90);
+    else targetWrist = 0;
+    return {
+      action: 'move',
+      joints: { wrist: targetWrist },
+      description: `Tilting wrist to ${targetWrist.toFixed(0)}°.`,
+      code: `setWrist(${targetWrist.toFixed(0)});`,
+    };
+  }
+
+  // === GRIPPER COMMANDS ===
+
+  if (lowerMessage.includes('open') || lowerMessage.includes('release')) {
+    return {
+      action: 'move',
+      joints: { gripper: 100 },
+      description: 'Opening the gripper fully.',
+      code: `openGripper();`,
+    };
+  }
+
+  if (lowerMessage.includes('close') || lowerMessage.includes('grip') || lowerMessage.includes('grab') || lowerMessage.includes('clamp')) {
+    return {
+      action: 'move',
+      joints: { gripper: 0 },
+      description: 'Closing the gripper.',
+      code: `closeGripper();`,
+    };
+  }
+
+  // === PRESET ACTIONS ===
+
+  if (lowerMessage.includes('wave') || lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
     return {
       action: 'sequence',
       joints: [
@@ -257,7 +420,7 @@ async function simulateArmResponse(
         { wrist: -45 },
         { wrist: 0 },
       ],
-      description: "Waving hello! I've raised the arm and will move the wrist back and forth.",
+      description: "Waving hello! Raising arm and moving wrist back and forth.",
       code: `// Wave Hello
 void waveHello() {
   setShoulder(50);
@@ -274,7 +437,7 @@ void waveHello() {
     };
   }
 
-  if (lowerMessage.includes('pick') || lowerMessage.includes('grab')) {
+  if (lowerMessage.includes('pick') || (lowerMessage.includes('grab') && lowerMessage.includes('object'))) {
     return {
       action: 'sequence',
       joints: [
@@ -299,7 +462,7 @@ void pickUp() {
     };
   }
 
-  if (lowerMessage.includes('scan') || lowerMessage.includes('look around')) {
+  if (lowerMessage.includes('scan') || lowerMessage.includes('look around') || lowerMessage.includes('search')) {
     return {
       action: 'sequence',
       joints: [{ base: -70 }, { base: 70 }, { base: 0 }],
@@ -315,7 +478,7 @@ void scanArea() {
     };
   }
 
-  if (lowerMessage.includes('home') || lowerMessage.includes('reset') || lowerMessage.includes('center')) {
+  if (lowerMessage.includes('home') || lowerMessage.includes('reset') || lowerMessage.includes('center') || lowerMessage.includes('zero')) {
     return {
       action: 'move',
       joints: { base: 0, shoulder: 0, elbow: 0, wrist: 0, gripper: 50 },
@@ -331,48 +494,181 @@ void goHome() {
     };
   }
 
-  if (lowerMessage.includes('open') && lowerMessage.includes('gripper')) {
+  if (lowerMessage.includes('point') || lowerMessage.includes('aim')) {
     return {
       action: 'move',
-      joints: { gripper: 100 },
-      description: 'Opening the gripper fully.',
-      code: `openGripper();`,
-    };
-  }
-
-  if (lowerMessage.includes('close') && lowerMessage.includes('gripper')) {
-    return {
-      action: 'move',
-      joints: { gripper: 0 },
-      description: 'Closing the gripper.',
-      code: `closeGripper();`,
-    };
-  }
-
-  if (lowerMessage.includes('reach') || lowerMessage.includes('forward')) {
-    return {
-      action: 'move',
-      joints: { shoulder: 30, elbow: -20, wrist: -10 },
-      description: 'Reaching forward by extending the arm.',
-      code: `// Reach Forward
-void reachForward() {
-  setShoulder(30);
-  setElbow(-20);
-  setWrist(-10);
+      joints: { shoulder: 20, elbow: -90, wrist: 0, gripper: 0 },
+      description: 'Pointing forward with the arm extended.',
+      code: `// Point Forward
+void point() {
+  setShoulder(20);
+  setElbow(-90);
+  setWrist(0);
+  closeGripper();
 }`,
     };
   }
 
+  if (lowerMessage.includes('nod') || lowerMessage.includes('yes')) {
+    return {
+      action: 'sequence',
+      joints: [
+        { wrist: 30 },
+        { wrist: -30 },
+        { wrist: 30 },
+        { wrist: -30 },
+        { wrist: 0 },
+      ],
+      description: 'Nodding the wrist up and down.',
+      code: `// Nod
+void nod() {
+  for (int i = 0; i < 2; i++) {
+    setWrist(30);
+    delay(300);
+    setWrist(-30);
+    delay(300);
+  }
+  setWrist(0);
+}`,
+    };
+  }
+
+  if (lowerMessage.includes('shake') || lowerMessage.includes('no')) {
+    return {
+      action: 'sequence',
+      joints: [
+        { base: currentJoints.base - 20 },
+        { base: currentJoints.base + 20 },
+        { base: currentJoints.base - 20 },
+        { base: currentJoints.base + 20 },
+        { base: currentJoints.base },
+      ],
+      description: 'Shaking the base left and right.',
+      code: `// Shake No
+void shakeNo() {
+  int startBase = getBase();
+  for (int i = 0; i < 2; i++) {
+    setBase(startBase - 20);
+    delay(250);
+    setBase(startBase + 20);
+    delay(250);
+  }
+  setBase(startBase);
+}`,
+    };
+  }
+
+  if (lowerMessage.includes('flex') || lowerMessage.includes('show off') || lowerMessage.includes('strong')) {
+    return {
+      action: 'sequence',
+      joints: [
+        { shoulder: 45, elbow: -100, gripper: 0 },
+        { elbow: -30 },
+        { elbow: -100 },
+        { elbow: -30 },
+      ],
+      description: 'Flexing the arm!',
+      code: `// Flex
+void flex() {
+  setShoulder(45);
+  setElbow(-100);
+  closeGripper();
+  for (int i = 0; i < 2; i++) {
+    setElbow(-30);
+    delay(400);
+    setElbow(-100);
+    delay(400);
+  }
+}`,
+    };
+  }
+
+  // === NUMERIC/SPECIFIC VALUE COMMANDS ===
+
+  // Handle "set base to 45" or "move to 30 degrees"
+  const numberMatch = lowerMessage.match(/(-?\d+)/);
+  if (numberMatch) {
+    const value = parseInt(numberMatch[1]);
+    // Determine which joint based on context
+    if (lowerMessage.includes('base')) {
+      return {
+        action: 'move',
+        joints: { base: Math.max(-135, Math.min(135, value)) },
+        description: `Setting base to ${value}°.`,
+        code: `setBase(${value});`,
+      };
+    }
+    if (lowerMessage.includes('shoulder')) {
+      return {
+        action: 'move',
+        joints: { shoulder: Math.max(-90, Math.min(90, value)) },
+        description: `Setting shoulder to ${value}°.`,
+        code: `setShoulder(${value});`,
+      };
+    }
+    if (lowerMessage.includes('elbow')) {
+      return {
+        action: 'move',
+        joints: { elbow: Math.max(-135, Math.min(45, value)) },
+        description: `Setting elbow to ${value}°.`,
+        code: `setElbow(${value});`,
+      };
+    }
+    if (lowerMessage.includes('wrist')) {
+      return {
+        action: 'move',
+        joints: { wrist: Math.max(-90, Math.min(90, value)) },
+        description: `Setting wrist to ${value}°.`,
+        code: `setWrist(${value});`,
+      };
+    }
+    if (lowerMessage.includes('gripper')) {
+      return {
+        action: 'move',
+        joints: { gripper: Math.max(0, Math.min(100, value)) },
+        description: `Setting gripper to ${value}%.`,
+        code: `setGripper(${value});`,
+      };
+    }
+  }
+
+  // === CATCH-ALL: Try to interpret any movement intent ===
+
+  // If the message seems to want movement, try to interpret it
+  if (lowerMessage.includes('move') || lowerMessage.includes('go') || lowerMessage.includes('make')) {
+    // Default to some movement based on current state
+    return {
+      action: 'move',
+      joints: {
+        base: currentJoints.base + (Math.random() > 0.5 ? 20 : -20),
+        shoulder: Math.min(currentJoints.shoulder + 15, 60)
+      },
+      description: `Moving the arm. Current position: Base ${currentJoints.base.toFixed(0)}°, Shoulder ${currentJoints.shoulder.toFixed(0)}°, Elbow ${currentJoints.elbow.toFixed(0)}°. Try "left", "right", "up", "down", "forward", "back" for specific directions.`,
+      code: `// Movement
+setBase(${(currentJoints.base + 20).toFixed(0)});
+setShoulder(${Math.min(currentJoints.shoulder + 15, 60).toFixed(0)});`,
+    };
+  }
+
+  // Provide helpful feedback for unrecognized commands
   return {
-    action: 'error',
-    description: `I'm not sure how to "${message}". Try commands like "wave hello", "pick up", "scan the area", or "go home".`,
+    action: 'move',
+    joints: {},
+    description: `I can help you control the arm! Try these commands:
+• **Directions**: "go left", "move right", "raise up", "lower down", "extend forward", "pull back"
+• **Joints**: "rotate base", "shoulder up", "bend elbow", "tilt wrist"
+• **Gripper**: "open gripper", "close gripper", "grab", "release"
+• **Presets**: "wave hello", "pick up", "scan area", "go home", "point"
+• **Specific**: "set base to 45", "shoulder 30 degrees"
+
+Current position: Base ${currentJoints.base.toFixed(0)}°, Shoulder ${currentJoints.shoulder.toFixed(0)}°, Elbow ${currentJoints.elbow.toFixed(0)}°, Wrist ${currentJoints.wrist.toFixed(0)}°`,
   };
 }
 
 // Wheeled robot responses
 async function simulateWheeledResponse(
   message: string,
-  currentState: WheeledRobotState
+  _currentState: WheeledRobotState
 ): Promise<LLMResponse> {
   await new Promise((r) => setTimeout(r, 800 + Math.random() * 500));
   const lowerMessage = message.toLowerCase();
@@ -735,7 +1031,7 @@ void descend() {
 // Humanoid robot responses
 async function simulateHumanoidResponse(
   message: string,
-  currentState: HumanoidState
+  _currentState: HumanoidState
 ): Promise<LLMResponse> {
   await new Promise((r) => setTimeout(r, 800 + Math.random() * 500));
   const lowerMessage = message.toLowerCase();

@@ -1,9 +1,10 @@
 /**
  * Drone 3D Component
  * Quadcopter drone with physics simulation
+ * PBR Materials for realistic rendering
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider, RapierRigidBody } from '@react-three/rapier';
 import { RoundedBox, Cylinder, Sphere } from '@react-three/drei';
@@ -19,20 +20,81 @@ const DEFAULT_CONFIG: DroneConfig = {
   propellerSize: 0.04,    // 4cm propeller radius
 };
 
-// Material colors
+// PBR Material property configurations (not instances - to avoid disposal issues)
+const MATERIALS = {
+  carbonFiber: {
+    color: '#1a1a1a',
+    metalness: 0.3,
+    roughness: 0.4,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.3,
+    envMapIntensity: 1.0,
+  },
+  bodyAccent: {
+    color: '#2d2d2d',
+    metalness: 0.2,
+    roughness: 0.6,
+    envMapIntensity: 0.8,
+  },
+  arm: {
+    color: '#252525',
+    metalness: 0.25,
+    roughness: 0.45,
+    clearcoat: 0.5,
+    clearcoatRoughness: 0.4,
+    envMapIntensity: 0.9,
+  },
+  motor: {
+    color: '#0a0a0a',
+    metalness: 0.9,
+    roughness: 0.2,
+    envMapIntensity: 1.5,
+  },
+  motorBell: {
+    color: '#c0c0c0',
+    metalness: 0.95,
+    roughness: 0.15,
+    envMapIntensity: 2.0,
+  },
+  propeller: {
+    color: '#4a4a4a',
+    metalness: 0.0,
+    roughness: 0.3,
+  },
+  battery: {
+    color: '#1e40af',
+    metalness: 0.1,
+    roughness: 0.6,
+    clearcoat: 0.3,
+    envMapIntensity: 0.8,
+  },
+  cameraLens: {
+    color: '#0a0a0a',
+    metalness: 0.8,
+    roughness: 0.05,
+    envMapIntensity: 2.5,
+  },
+  cameraBody: {
+    color: '#1e293b',
+    metalness: 0.5,
+    roughness: 0.4,
+    envMapIntensity: 1.2,
+  },
+  landingGear: {
+    color: '#2d2d2d',
+    roughness: 0.9,
+    metalness: 0.0,
+  },
+};
+
+// LED colors (kept for dynamic states)
 const COLORS = {
-  body: '#1f2937',        // Dark gray body
-  bodyAccent: '#374151',
-  arm: '#4b5563',
-  motor: '#111827',
-  propeller: '#6b7280',
-  propellerTip: '#ef4444', // Red tips for visibility
   led: {
     armed: '#22c55e',
     disarmed: '#ef4444',
     warning: '#f59e0b',
   },
-  camera: '#1e293b',
+  propellerTip: '#ef4444',
 };
 
 interface Drone3DProps {
@@ -41,7 +103,7 @@ interface Drone3DProps {
   onStateChange?: (state: Partial<DroneState>) => void;
 }
 
-// Propeller component with spinning animation
+// Propeller component with spinning animation and inline PBR materials
 const Propeller: React.FC<{
   position: [number, number, number];
   rpm: number;
@@ -62,20 +124,28 @@ const Propeller: React.FC<{
 
   return (
     <group position={position}>
-      {/* Motor housing */}
-      <Cylinder args={[0.012, 0.014, 0.02, 12]} position={[0, -0.01, 0]}>
-        <meshStandardMaterial color={COLORS.motor} metalness={0.8} roughness={0.3} />
+      {/* Motor base - dark metallic */}
+      <Cylinder args={[0.012, 0.014, 0.012, 16]} position={[0, -0.016, 0]} castShadow>
+        <meshPhysicalMaterial {...MATERIALS.motor} />
+      </Cylinder>
+      {/* Motor bell - silver aluminum */}
+      <Cylinder args={[0.011, 0.012, 0.01, 16]} position={[0, -0.005, 0]} castShadow>
+        <meshPhysicalMaterial {...MATERIALS.motorBell} />
+      </Cylinder>
+      {/* Motor coil detail */}
+      <Cylinder args={[0.008, 0.008, 0.004, 12]} position={[0, -0.018, 0]}>
+        <meshStandardMaterial color="#8b4513" metalness={0.7} roughness={0.4} />
       </Cylinder>
 
       {/* Propeller */}
       <group ref={propRef} position={[0, 0.005, 0]}>
         {isSpinning ? (
-          // Show disc when spinning fast
+          // Show disc when spinning fast - motion blur effect
           <Cylinder args={[size, size, 0.002, 32]}>
             <meshStandardMaterial
-              color={COLORS.propeller}
+              color="#505050"
               transparent
-              opacity={0.3}
+              opacity={0.25}
             />
           </Cylinder>
         ) : (
@@ -85,24 +155,26 @@ const Propeller: React.FC<{
               args={[size * 2, 0.003, 0.015]}
               radius={0.001}
               rotation={[0, 0, 0]}
+              castShadow
             >
-              <meshStandardMaterial color={COLORS.propeller} />
+              <meshPhysicalMaterial {...MATERIALS.propeller} />
             </RoundedBox>
             <RoundedBox
               args={[size * 2, 0.003, 0.015]}
               radius={0.001}
               rotation={[0, Math.PI / 2, 0]}
+              castShadow
             >
-              <meshStandardMaterial color={COLORS.propeller} />
+              <meshPhysicalMaterial {...MATERIALS.propeller} />
             </RoundedBox>
-            {/* Red tips */}
+            {/* Red tips for visibility */}
             <mesh position={[size - 0.005, 0, 0]}>
               <boxGeometry args={[0.01, 0.003, 0.015]} />
-              <meshStandardMaterial color={COLORS.propellerTip} />
+              <meshStandardMaterial color={COLORS.propellerTip} emissive={COLORS.propellerTip} emissiveIntensity={0.3} />
             </mesh>
             <mesh position={[-size + 0.005, 0, 0]}>
               <boxGeometry args={[0.01, 0.003, 0.015]} />
-              <meshStandardMaterial color={COLORS.propellerTip} />
+              <meshStandardMaterial color={COLORS.propellerTip} emissive={COLORS.propellerTip} emissiveIntensity={0.3} />
             </mesh>
           </>
         )}
@@ -111,7 +183,7 @@ const Propeller: React.FC<{
   );
 };
 
-// Drone arm component
+// Drone arm component with inline PBR
 const DroneArm: React.FC<{
   angle: number;
   length: number;
@@ -125,15 +197,21 @@ const DroneArm: React.FC<{
 
   return (
     <group>
-      {/* Arm */}
+      {/* Carbon fiber arm */}
       <group rotation={[0, -rad, 0]}>
         <RoundedBox
           args={[length, 0.01, 0.015]}
           radius={0.003}
           position={[length / 2, 0, 0]}
+          castShadow
         >
-          <meshStandardMaterial color={COLORS.arm} metalness={0.3} roughness={0.7} />
+          <meshPhysicalMaterial {...MATERIALS.arm} />
         </RoundedBox>
+        {/* Arm reinforcement stripe */}
+        <mesh position={[length / 2, 0.006, 0]}>
+          <boxGeometry args={[length * 0.8, 0.002, 0.008]} />
+          <meshStandardMaterial color="#3a3a3a" metalness={0.4} roughness={0.5} />
+        </mesh>
       </group>
 
       {/* Motor and propeller at end */}
@@ -160,48 +238,70 @@ export const Drone3D: React.FC<Drone3DProps> = ({
   const motorAngles = [45, -45, 135, -135];
   const motorClockwise = [true, false, false, true]; // Alternating for stability
 
-  // Physics simulation
-  useFrame((_, delta) => {
-    if (!bodyRef.current || !state.armed) return;
+  // Physics simulation - simplified for stability
+  useFrame(() => {
+    if (!bodyRef.current) return;
 
-    // Calculate thrust from throttle
-    const baseThrust = (state.throttle / 100) * 9.81 * 1.2; // Slightly more than gravity
+    // Get current position
+    const pos = bodyRef.current.translation();
 
-    // Apply tilt for movement
+    // Ground clamp - never go below ground level
+    const minHeight = 0.05; // Drone's resting height
+
+    if (!state.armed) {
+      // When not armed, stay on ground at current XZ position
+      bodyRef.current.setNextKinematicTranslation({
+        x: state.position.x,
+        y: minHeight,
+        z: state.position.z,
+      });
+      return;
+    }
+
+    // Calculate target height based on throttle
+    // Throttle 0 = stay at current height (hover), throttle > 50 = rise, < 50 = descend
+    const throttleNormalized = (state.throttle - 50) / 50; // -1 to 1
+    const verticalSpeed = throttleNormalized * 0.01; // Slow vertical movement
+
+    // Apply tilt for horizontal movement
     const rollRad = (state.rotation.x * Math.PI) / 180;
     const pitchRad = (state.rotation.z * Math.PI) / 180;
     const yawRad = (state.rotation.y * Math.PI) / 180;
 
-    // Calculate velocity based on tilt
-    const tiltForce = 0.3;
-    const vx = Math.sin(pitchRad) * tiltForce * state.throttle / 100;
-    const vz = -Math.sin(rollRad) * tiltForce * state.throttle / 100;
-    const vy = state.flightMode === 'land' ? -0.2 : (baseThrust - 9.81) * 0.05;
+    // Calculate horizontal velocity based on tilt
+    const tiltForce = 0.005;
+    const vx = Math.sin(pitchRad) * tiltForce * state.throttle;
+    const vz = -Math.sin(rollRad) * tiltForce * state.throttle;
 
-    // Apply forces
-    bodyRef.current.setLinvel(
-      {
-        x: state.velocity.x + vx * delta * 10,
-        y: Math.max(-1, Math.min(1, state.velocity.y + vy)),
-        z: state.velocity.z + vz * delta * 10,
-      },
-      true
-    );
+    // Landing mode - descend slowly
+    const vy = state.flightMode === 'land' ? -0.005 : verticalSpeed;
+
+    // Calculate new position
+    let newY = pos.y + vy;
+
+    // Clamp to ground
+    if (newY < minHeight) {
+      newY = minHeight;
+    }
+
+    // Apply new position (kinematic movement)
+    bodyRef.current.setNextKinematicTranslation({
+      x: pos.x + vx,
+      y: newY,
+      z: pos.z + vz,
+    });
 
     // Apply rotation
     const rotation = new THREE.Quaternion().setFromEuler(
       new THREE.Euler(rollRad, yawRad, pitchRad)
     );
-    bodyRef.current.setRotation(rotation, true);
+    bodyRef.current.setNextKinematicRotation(rotation);
 
     // Update state callback
     if (onStateChange) {
-      const pos = bodyRef.current.translation();
-      const linvel = bodyRef.current.linvel();
-
       onStateChange({
-        position: { x: pos.x, y: pos.y, z: pos.z },
-        velocity: { x: linvel.x, y: linvel.y, z: linvel.z },
+        position: { x: pos.x + vx, y: newY, z: pos.z + vz },
+        velocity: { x: vx, y: vy, z: vz },
       });
     }
   });
@@ -217,70 +317,88 @@ export const Drone3D: React.FC<Drone3DProps> = ({
     <group>
       <RigidBody
         ref={bodyRef}
-        type={state.armed ? 'kinematicVelocity' : 'fixed'}
+        type="kinematicPosition"
         position={[state.position.x, state.position.y, state.position.z]}
         colliders={false}
-        gravityScale={state.armed ? 0.5 : 0}
       >
         <CuboidCollider args={[config.armLength, 0.02, config.armLength]} />
 
         <group>
-          {/* Central body */}
-          <RoundedBox args={[config.bodySize, 0.025, config.bodySize]} radius={0.008}>
-            <meshStandardMaterial color={COLORS.body} metalness={0.4} roughness={0.6} />
+          {/* Central body - carbon fiber */}
+          <RoundedBox args={[config.bodySize, 0.025, config.bodySize]} radius={0.008} castShadow>
+            <meshPhysicalMaterial {...MATERIALS.carbonFiber} />
           </RoundedBox>
 
-          {/* Top cover */}
+          {/* Top cover - accent panel */}
           <RoundedBox
             args={[config.bodySize * 0.7, 0.015, config.bodySize * 0.7]}
             radius={0.005}
             position={[0, 0.02, 0]}
+            castShadow
           >
-            <meshStandardMaterial color={COLORS.bodyAccent} metalness={0.3} roughness={0.7} />
+            <meshPhysicalMaterial {...MATERIALS.bodyAccent} />
           </RoundedBox>
 
-          {/* Battery */}
+          {/* Flight controller board detail */}
+          <mesh position={[0, 0.028, 0]}>
+            <boxGeometry args={[config.bodySize * 0.4, 0.003, config.bodySize * 0.4]} />
+            <meshStandardMaterial color="#1a472a" roughness={0.7} metalness={0.1} />
+          </mesh>
+
+          {/* Battery - LiPo with PBR */}
           <RoundedBox
             args={[config.bodySize * 0.5, 0.012, config.bodySize * 0.3]}
             radius={0.003}
             position={[0, -0.018, 0]}
+            castShadow
           >
-            <meshStandardMaterial color="#1e40af" metalness={0.2} roughness={0.8} />
+            <meshPhysicalMaterial {...MATERIALS.battery} />
           </RoundedBox>
+          {/* Battery warning label */}
+          <mesh position={[0, -0.011, 0]}>
+            <planeGeometry args={[config.bodySize * 0.3, 0.008]} />
+            <meshStandardMaterial color="#fbbf24" />
+          </mesh>
 
           {/* Camera/gimbal at front */}
           <group position={[config.bodySize / 2 - 0.01, -0.01, 0]}>
-            <Sphere args={[0.012, 12, 12]}>
-              <meshStandardMaterial color={COLORS.camera} metalness={0.5} roughness={0.4} />
+            <Sphere args={[0.012, 16, 16]} castShadow>
+              <meshPhysicalMaterial {...MATERIALS.cameraBody} />
             </Sphere>
             <Cylinder
-              args={[0.006, 0.008, 0.01, 12]}
+              args={[0.006, 0.008, 0.01, 16]}
               position={[0.008, 0, 0]}
               rotation={[0, 0, Math.PI / 2]}
+              castShadow
             >
-              <meshStandardMaterial color="#0f172a" metalness={0.8} />
+              <meshPhysicalMaterial {...MATERIALS.cameraLens} />
             </Cylinder>
+            {/* Lens glass */}
+            <mesh position={[0.014, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <circleGeometry args={[0.005, 16]} />
+              <meshPhysicalMaterial color="#0a0a0a" metalness={0.9} roughness={0.0} envMapIntensity={3} />
+            </mesh>
           </group>
 
           {/* Status LEDs */}
           <mesh position={[0, 0.03, config.bodySize / 2 - 0.01]}>
-            <sphereGeometry args={[0.005, 8, 8]} />
+            <sphereGeometry args={[0.005, 12, 12]} />
             <meshStandardMaterial
               color={ledColor}
               emissive={ledColor}
-              emissiveIntensity={state.armed ? 0.8 : 0.3}
+              emissiveIntensity={state.armed ? 1.0 : 0.4}
             />
           </mesh>
           <mesh position={[0, 0.03, -config.bodySize / 2 + 0.01]}>
-            <sphereGeometry args={[0.005, 8, 8]} />
+            <sphereGeometry args={[0.005, 12, 12]} />
             <meshStandardMaterial
               color={ledColor}
               emissive={ledColor}
-              emissiveIntensity={state.armed ? 0.8 : 0.3}
+              emissiveIntensity={state.armed ? 1.0 : 0.4}
             />
           </mesh>
 
-          {/* Arms and motors */}
+          {/* Arms and motors with PBR */}
           {motorAngles.map((angle, i) => (
             <DroneArm
               key={i}
@@ -292,7 +410,7 @@ export const Drone3D: React.FC<Drone3DProps> = ({
             />
           ))}
 
-          {/* Landing gear */}
+          {/* Landing gear with rubber feet */}
           {[
             [config.armLength * 0.7, 0, config.armLength * 0.7],
             [config.armLength * 0.7, 0, -config.armLength * 0.7],
@@ -300,11 +418,13 @@ export const Drone3D: React.FC<Drone3DProps> = ({
             [-config.armLength * 0.7, 0, -config.armLength * 0.7],
           ].map((pos, i) => (
             <group key={i} position={pos as [number, number, number]}>
-              <Cylinder args={[0.003, 0.003, 0.03, 8]} position={[0, -0.025, 0]}>
-                <meshStandardMaterial color={COLORS.arm} />
+              {/* Carbon fiber leg */}
+              <Cylinder args={[0.003, 0.003, 0.03, 8]} position={[0, -0.025, 0]} castShadow>
+                <meshPhysicalMaterial {...MATERIALS.arm} />
               </Cylinder>
-              <Sphere args={[0.005, 8, 8]} position={[0, -0.04, 0]}>
-                <meshStandardMaterial color={COLORS.body} />
+              {/* Rubber foot */}
+              <Sphere args={[0.006, 12, 12]} position={[0, -0.04, 0]}>
+                <meshStandardMaterial {...MATERIALS.landingGear} />
               </Sphere>
             </group>
           ))}
