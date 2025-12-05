@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
-import { Code, Copy, Check, Play, Square, FileCode, ChevronDown } from 'lucide-react';
+import { Code, Copy, Check, Play, Square, FileCode, ChevronDown, Download } from 'lucide-react';
 import { Button } from '../common';
 import { useAppStore } from '../../stores/useAppStore';
 import { runCode, stopProgram, validateCode } from '../../lib/codeRunner';
 import { CODE_TEMPLATES, type CodeTemplate } from '../../config/codeTemplates';
+import { ExportDialog } from './ExportDialog';
 
 export const CodeEditor: React.FC = () => {
   const {
@@ -19,6 +20,7 @@ export const CodeEditor: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const isReadOnly = skillLevel === 'prompter' || skillLevel === 'reader';
 
@@ -183,6 +185,16 @@ export const CodeEditor: React.FC = () => {
             )}
           </Button>
 
+          {/* Export Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowExportDialog(true)}
+            title="Export to Hardware"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+
           {/* Run/Stop Button */}
           {isCodeRunning ? (
             <Button
@@ -266,6 +278,12 @@ export const CodeEditor: React.FC = () => {
           <div className="text-xs text-red-400 font-mono">{code.compileError}</div>
         </div>
       )}
+
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+      />
     </div>
   );
 };

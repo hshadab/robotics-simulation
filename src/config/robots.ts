@@ -44,27 +44,6 @@ export const ROBOT_PROFILES: RobotProfile[] = [
     },
   },
   {
-    id: 'freenove-4wd',
-    name: '4WD Car',
-    manufacturer: 'Freenove',
-    type: 'wheeled',
-    description: '4WD Smart Car with Camera & Ultrasonic',
-    limits: {
-      base: { min: -180, max: 180 },
-      shoulder: { min: 0, max: 255 },
-      elbow: { min: 0, max: 255 },
-      wrist: { min: 0, max: 180 },
-      gripper: { min: 0, max: 100 },
-    },
-    defaultPosition: {
-      base: 0,
-      shoulder: 0,
-      elbow: 0,
-      wrist: 90,
-      gripper: 0,
-    },
-  },
-  {
     id: 'mini-quadcopter',
     name: 'Mini Quadcopter',
     manufacturer: 'Generic',

@@ -1,10 +1,13 @@
-import React from 'react';
-import { Play, Square, Bot, Save, Download, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, Square, Bot, Save, Settings } from 'lucide-react';
 import { Button, Select } from '../common';
 import { useAppStore } from '../../stores/useAppStore';
 import { ROBOT_PROFILES } from '../../config/robots';
+import { ShareButton } from '../controls/ShareButton';
+import { ApiKeySettings } from '../settings/ApiKeySettings';
 
 export const Header: React.FC = () => {
+  const [showSettings, setShowSettings] = useState(false);
   const {
     selectedRobotId,
     setSelectedRobot,
@@ -87,20 +90,17 @@ export const Header: React.FC = () => {
 
       {/* Right Actions */}
       <div className="flex items-center gap-2">
+        <ShareButton />
         <Button variant="ghost" size="sm" leftIcon={<Save className="w-4 h-4" />}>
           Save
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          leftIcon={<Download className="w-4 h-4" />}
-        >
-          Export to Arduino
-        </Button>
-        <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
           <Settings className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Settings Modal */}
+      <ApiKeySettings isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </header>
   );
 };
