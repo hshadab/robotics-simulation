@@ -147,9 +147,9 @@ const getDefaultState = () => {
       battery: 100,
     },
     sensorVisualization: {
-      showUltrasonicBeam: true,
-      showIRIndicators: true,
-      showDistanceLabels: true,
+      showUltrasonicBeam: false,
+      showIRIndicators: false,
+      showDistanceLabels: false,
     },
     // Environment state
     currentEnvironment: defaultEnv,
