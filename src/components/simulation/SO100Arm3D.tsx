@@ -39,54 +39,56 @@ const SERVO = {
   length: 0.048,
 };
 
-// SO-101 dimensions (meters) - based on actual STL file analysis
-// Scaled to ~65% for simulation viewport while maintaining accurate proportions
+// SO-101 dimensions (meters) - based on official URDF (so101_new_calib.urdf)
+// Visual scale factor applied for simulation viewport while maintaining accurate proportions
+const SCALE = 0.65; // Visual scale factor for simulation viewport
 const D = {
-  // Base_SO101
+  // Base_SO101 - URDF base_link
   baseOuterRadius: 0.048,
   baseInnerRadius: 0.035,
   baseHeight: 0.010,
 
   // Base_motor_holder_SO101 (cylindrical tower on base)
+  // From URDF: shoulder_pan at z=0.0624 from base
   baseTowerRadius: 0.032,
-  baseTowerHeight: 0.045,
+  baseTowerHeight: 0.0624 * SCALE,  // URDF: 0.0624m
 
   // Rotation_Pitch_SO101 (shoulder bracket - distinctive shape)
+  // From URDF: shoulder_lift at z=0.0542 from shoulder
   shoulderWidth: 0.056,
-  shoulderHeight: 0.065,
+  shoulderHeight: 0.0542 * SCALE,   // URDF: 0.0542m
   shoulderDepth: 0.038,
   shoulderWallThick: 0.006,
 
-  // Upper_arm_SO101 - from STL analysis (142mm x 67mm x 24mm actual)
-  // Scaled proportionally for simulation
-  upperArmLength: 0.092,        // ~142mm scaled
-  upperArmWidth: 0.044,         // ~67mm scaled (total Z span)
-  upperArmThick: 0.016,         // ~24mm scaled (Y thickness)
-  upperArmProngWidth: 0.007,    // ~10mm scaled (each prong)
-  upperArmGapWidth: 0.010,      // ~15mm scaled (cutout gap)
-  upperArmBridgeWidth: 0.012,   // ~18mm scaled (center bridge)
+  // Upper_arm_SO101 - from URDF elbow_flex origin x=0.11257
+  upperArmLength: 0.11257 * SCALE,  // URDF: 0.11257m
+  upperArmWidth: 0.044,
+  upperArmThick: 0.016,
+  upperArmProngWidth: 0.007,
+  upperArmGapWidth: 0.010,
+  upperArmBridgeWidth: 0.012,
 
-  // Under_arm_SO101 (forearm) - from STL analysis (131mm x 64mm x 24mm actual)
-  forearmLength: 0.085,         // ~131mm scaled
-  forearmWidth: 0.042,          // ~64mm scaled
-  forearmThick: 0.016,          // ~24mm scaled
-  forearmProngWidth: 0.007,     // ~10mm scaled
-  forearmGapWidth: 0.006,       // ~9mm scaled
-  forearmBridgeWidth: 0.017,    // ~26mm scaled
+  // Under_arm_SO101 (forearm) - from URDF wrist_flex origin x=0.1349
+  forearmLength: 0.1349 * SCALE,    // URDF: 0.1349m
+  forearmWidth: 0.042,
+  forearmThick: 0.016,
+  forearmProngWidth: 0.007,
+  forearmGapWidth: 0.006,
+  forearmBridgeWidth: 0.017,
 
-  // Wrist_Roll_Pitch_SO101
+  // Wrist_Roll_Pitch_SO101 - from URDF wrist_roll origin y=0.0611
   wristBlockWidth: 0.030,
-  wristBlockHeight: 0.028,
+  wristBlockHeight: 0.0611 * SCALE * 0.5, // URDF: 0.0611m (wrist section)
   wristBlockDepth: 0.030,
 
-  // Gripper with Moving_Jaw_SO101
+  // Gripper with Moving_Jaw_SO101 - from URDF gripper_frame z=0.098
   gripperPalmWidth: 0.042,
   gripperPalmHeight: 0.014,
   gripperPalmDepth: 0.028,
-  fixedJawLength: 0.048,
+  fixedJawLength: 0.098 * SCALE * 0.6,  // URDF: total gripper ~0.098m
   fixedJawWidth: 0.010,
   fixedJawThick: 0.016,
-  movingJawLength: 0.050,
+  movingJawLength: 0.098 * SCALE * 0.6,
   movingJawWidth: 0.008,
   movingJawThick: 0.014,
   jawMaxOpen: 0.032,
