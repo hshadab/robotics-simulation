@@ -1,873 +1,264 @@
 /**
  * SO-101 Robot Arm 3D Model
- * Based on Hugging Face LeRobot / The Robot Studio open-source design
- * https://github.com/TheRobotStudio/SO-ARM100
+ * SYSTEMATIC APPROACH: Uses exact transforms from official URDF
+ * Source: https://github.com/TheRobotStudio/SO-ARM100/blob/main/Simulation/SO101/so101_new_calib.urdf
  *
- * SO-101 is the flagship/newer version of the SO-100.
- *
- * Part names from official STL files:
- * - Base_SO101.stl
- * - Base_motor_holder_SO101.stl
- * - Rotation_Pitch_SO101.stl (shoulder bracket)
- * - Upper_arm_SO101.stl
- * - Under_arm_SO101.stl (forearm)
- * - Motor_holder_SO101_Wrist.stl
- * - Wrist_Roll_Pitch_SO101.stl
- * - Moving_Jaw_SO101.stl
- *
- * Key design features:
- * - 5-DOF arm + 1-DOF gripper (6 STS3215 servos total)
- * - Fixed jaw + moving jaw gripper design
- * - External wire routing (improved from SO-100)
- * - White 3D printed PLA+ structure
- * - Blue anodized STS3215 bus servos
+ * URDF Coordinate System: Z-up
+ * Three.js Coordinate System: Y-up
+ * Conversion: URDF (x,y,z) → Three.js (x,z,-y) for positions
+ *             URDF rpy applied directly then rotate -90° around X
  */
 
-import React from 'react';
-import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier';
-import { RoundedBox, Cylinder } from '@react-three/drei';
+import React, { useMemo, Suspense } from 'react';
+import { useLoader } from '@react-three/fiber';
+import { STLLoader } from 'three-stdlib';
+import * as THREE from 'three';
+import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import type { JointState } from '../../types';
 
 interface SO100ArmProps {
   joints: JointState;
 }
 
-// STS3215 servo dimensions (meters) - 24x32x48mm
-const SERVO = {
-  width: 0.024,
-  height: 0.032,
-  length: 0.048,
+const STL_PATH = '/models/so101';
+
+// Materials matching URDF
+const MAT = {
+  printed: { color: '#F5F0E6', metalness: 0.0, roughness: 0.4 },  // 3d_printed
+  servo: { color: '#1a1a1a', metalness: 0.2, roughness: 0.3 },    // sts3215
 };
 
-// SO-101 dimensions (meters) - based on official URDF (so101_new_calib.urdf)
-// Visual scale factor applied for simulation viewport while maintaining accurate proportions
-const SCALE = 0.65; // Visual scale factor for simulation viewport
-const D = {
-  // Base_SO101 - URDF base_link
-  baseOuterRadius: 0.048,
-  baseInnerRadius: 0.035,
-  baseHeight: 0.010,
+/**
+ * URDF Visual Origin Data - extracted directly from so101_new_calib.urdf
+ * Format: { xyz: [x, y, z], rpy: [roll, pitch, yaw] }
+ */
+const URDF_VISUALS = {
+  // base_link visuals
+  base_motor_holder: { xyz: [-0.00636471, -9.94414e-05, -0.0024], rpy: [1.5708, 0, 1.5708] },
+  base: { xyz: [-0.00636471, 0, -0.0024], rpy: [1.5708, 0, 1.5708] },
+  base_servo: { xyz: [0.0263353, 0, 0.0437], rpy: [0, 0, 0] },
 
-  // Base_motor_holder_SO101 (cylindrical tower on base)
-  // From URDF: shoulder_pan at z=0.0624 from base
-  baseTowerRadius: 0.032,
-  baseTowerHeight: 0.0624 * SCALE,  // URDF: 0.0624m
+  // shoulder_link visuals
+  shoulder_servo: { xyz: [-0.0303992, 0.000422241, -0.0417], rpy: [1.5708, 1.5708, 0] },
+  motor_holder_base: { xyz: [-0.0675992, -0.000177759, 0.0158499], rpy: [1.5708, -1.5708, 0] },
+  rotation_pitch: { xyz: [0.0122008, 2.22413e-05, 0.0464], rpy: [-1.5708, 0, 0] },
 
-  // Rotation_Pitch_SO101 (shoulder bracket - distinctive shape)
-  // From URDF: shoulder_lift at z=0.0542 from shoulder
-  shoulderWidth: 0.056,
-  shoulderHeight: 0.0542 * SCALE,   // URDF: 0.0542m
-  shoulderDepth: 0.038,
-  shoulderWallThick: 0.006,
+  // upper_arm_link visuals
+  upper_arm_servo: { xyz: [-0.11257, -0.0155, 0.0187], rpy: [-Math.PI, 0, -1.5708] },
+  upper_arm: { xyz: [-0.065085, 0.012, 0.0182], rpy: [Math.PI, 0, 0] },
 
-  // Upper_arm_SO101 - from URDF elbow_flex origin x=0.11257
-  upperArmLength: 0.11257 * SCALE,  // URDF: 0.11257m
-  upperArmWidth: 0.044,
-  upperArmThick: 0.016,
-  upperArmProngWidth: 0.007,
-  upperArmGapWidth: 0.010,
-  upperArmBridgeWidth: 0.012,
+  // lower_arm_link visuals
+  under_arm: { xyz: [-0.0648499, -0.032, 0.0182], rpy: [Math.PI, 0, 0] },
+  motor_holder_wrist: { xyz: [-0.0648499, -0.032, 0.018], rpy: [-Math.PI, 0, 0] },
+  lower_arm_servo: { xyz: [-0.1224, 0.0052, 0.0187], rpy: [-Math.PI, 0, -Math.PI] },
 
-  // Under_arm_SO101 (forearm) - from URDF wrist_flex origin x=0.1349
-  forearmLength: 0.1349 * SCALE,    // URDF: 0.1349m
-  forearmWidth: 0.042,
-  forearmThick: 0.016,
-  forearmProngWidth: 0.007,
-  forearmGapWidth: 0.006,
-  forearmBridgeWidth: 0.017,
+  // wrist_link visuals
+  wrist_servo: { xyz: [0, -0.0424, 0.0306], rpy: [1.5708, 1.5708, 0] },
+  wrist_roll_pitch: { xyz: [0, -0.028, 0.0181], rpy: [-1.5708, -1.5708, 0] },
 
-  // Wrist_Roll_Pitch_SO101 - from URDF wrist_roll origin y=0.0611
-  wristBlockWidth: 0.030,
-  wristBlockHeight: 0.0611 * SCALE * 0.5, // URDF: 0.0611m (wrist section)
-  wristBlockDepth: 0.030,
+  // gripper_link visuals
+  gripper_servo: { xyz: [0.0077, 0.0001, -0.0234], rpy: [-1.5708, 0, 0] },
+  wrist_roll_follower: { xyz: [0, -0.000218214, 0.000949706], rpy: [-Math.PI, 0, 0] },
 
-  // Gripper with Moving_Jaw_SO101 - from URDF gripper_frame z=0.098
-  gripperPalmWidth: 0.042,
-  gripperPalmHeight: 0.014,
-  gripperPalmDepth: 0.028,
-  fixedJawLength: 0.098 * SCALE * 0.6,  // URDF: total gripper ~0.098m
-  fixedJawWidth: 0.010,
-  fixedJawThick: 0.016,
-  movingJawLength: 0.098 * SCALE * 0.6,
-  movingJawWidth: 0.008,
-  movingJawThick: 0.014,
-  jawMaxOpen: 0.032,
+  // moving_jaw_link visuals
+  moving_jaw: { xyz: [0, 0, 0.0189], rpy: [0, 0, 0] },
 };
 
-// Materials for SO-101
-const M = {
-  // White PLA+ (main structure) - slightly off-white like real 3D prints
-  white: { color: '#F5F5F0', metalness: 0.0, roughness: 0.35 },
-  // Slightly darker white for recessed areas
-  whiteShade: { color: '#E8E8E3', metalness: 0.0, roughness: 0.4 },
-  // STS3215 servo - BLACK/dark grey (corrected from blue)
-  servoBlack: { color: '#1A1A1A', metalness: 0.15, roughness: 0.3 },
-  // Servo face plate (slightly lighter)
-  servoFace: { color: '#2D2D2D', metalness: 0.1, roughness: 0.35 },
-  // Chrome/metal screws
-  chrome: { color: '#C0C0C0', metalness: 0.95, roughness: 0.1 },
-  // Brass/gold screws
-  brass: { color: '#B8860B', metalness: 0.85, roughness: 0.15 },
-  // Wire colors
-  wireRed: { color: '#CC0000', metalness: 0.1, roughness: 0.5 },
-  wireBlack: { color: '#111111', metalness: 0.1, roughness: 0.5 },
-  wireWhite: { color: '#EEEEEE', metalness: 0.1, roughness: 0.5 },
-  // PCB green
-  pcbGreen: { color: '#228B22', metalness: 0.2, roughness: 0.4 },
+/**
+ * URDF Joint Origins - transforms from parent to child link
+ */
+const URDF_JOINTS = {
+  // base_link → shoulder_link
+  shoulder_pan: { xyz: [0.0388353, 0, 0.0624], rpy: [Math.PI, 0, -Math.PI] },
+  // shoulder_link → upper_arm_link
+  shoulder_lift: { xyz: [-0.0303992, -0.0182778, -0.0542], rpy: [-1.5708, -1.5708, 0] },
+  // upper_arm_link → lower_arm_link
+  elbow_flex: { xyz: [-0.11257, -0.028, 0], rpy: [0, 0, 1.5708] },
+  // lower_arm_link → wrist_link
+  wrist_flex: { xyz: [-0.1349, 0.0052, 0], rpy: [0, 0, -1.5708] },
+  // wrist_link → gripper_link
+  wrist_roll: { xyz: [0, -0.0611, 0.0181], rpy: [1.5708, 0.0486795, Math.PI] },
+  // gripper_link → moving_jaw
+  gripper: { xyz: [0.0202, 0.0188, -0.0234], rpy: [1.5708, 0, 0] },
 };
 
-// STS3215 Servo component - realistic black servo with details
-const STS3215: React.FC<{
-  rotation?: [number, number, number];
-  scale?: number;
-}> = ({ rotation = [0, 0, 0], scale = 1 }) => {
-  const w = SERVO.width * scale;
-  const h = SERVO.height * scale;
-  const len = SERVO.length * scale;
+/**
+ * Convert URDF coordinates (Z-up) to Three.js (Y-up)
+ * URDF: X-forward, Y-left, Z-up
+ * Three.js: X-right, Y-up, Z-forward
+ */
+function urdfToThreePos(xyz: number[]): [number, number, number] {
+  return [xyz[0], xyz[2], -xyz[1]];
+}
+
+/**
+ * Convert URDF RPY to Three.js Euler
+ * Apply the rotation in URDF frame, then account for coordinate change
+ */
+function urdfToThreeRot(rpy: number[]): THREE.Euler {
+  // Create rotation matrix from URDF RPY (roll around X, pitch around Y, yaw around Z)
+  const euler = new THREE.Euler(rpy[0], rpy[1], rpy[2], 'XYZ');
+  const matrix = new THREE.Matrix4().makeRotationFromEuler(euler);
+
+  // Apply coordinate transform: rotate -90 degrees around X to go from Z-up to Y-up
+  const coordTransform = new THREE.Matrix4().makeRotationX(-Math.PI / 2);
+  matrix.premultiply(coordTransform);
+
+  const resultEuler = new THREE.Euler().setFromRotationMatrix(matrix, 'XYZ');
+  return resultEuler;
+}
+
+// STL Mesh component with URDF origin transform
+const URDFMesh: React.FC<{
+  file: string;
+  origin: { xyz: number[]; rpy: number[] };
+  material?: typeof MAT.printed;
+}> = ({ file, origin, material = MAT.printed }) => {
+  const geometry = useLoader(STLLoader, `${STL_PATH}/${file}`);
+
+  const processedGeometry = useMemo(() => {
+    const geo = geometry.clone();
+    geo.computeVertexNormals();
+    // Don't center - use original geometry position with URDF transform
+    return geo;
+  }, [geometry]);
+
+  // Apply URDF origin transform
+  const position = urdfToThreePos(origin.xyz);
+  const rotation = urdfToThreeRot(origin.rpy);
 
   return (
-    <group rotation={rotation}>
-      {/* Main body - black servo */}
-      <RoundedBox args={[w, h, len]} radius={0.002 * scale} castShadow receiveShadow>
-        <meshStandardMaterial {...M.servoBlack} />
-      </RoundedBox>
-      {/* Face plate detail */}
-      <mesh position={[0, h / 2 - 0.001, 0]}>
-        <boxGeometry args={[w * 0.85, 0.001, len * 0.7]} />
-        <meshStandardMaterial {...M.servoFace} />
-      </mesh>
-      {/* Output flange */}
-      <mesh position={[0, h / 2 + 0.002, 0]}>
-        <cylinderGeometry args={[0.009 * scale, 0.009 * scale, 0.004, 20]} />
-        <meshStandardMaterial {...M.servoBlack} />
-      </mesh>
-      {/* Center screw */}
-      <mesh position={[0, h / 2 + 0.0045, 0]}>
-        <cylinderGeometry args={[0.003 * scale, 0.003 * scale, 0.003, 6]} />
-        <meshStandardMaterial {...M.chrome} />
-      </mesh>
-      {/* Mounting screw holes (4 corners on top) */}
-      {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
-        <mesh key={i} position={[x * 0.007 * scale, h / 2 + 0.003, z * 0.015 * scale]}>
-          <cylinderGeometry args={[0.0015 * scale, 0.0015 * scale, 0.002, 6]} />
-          <meshStandardMaterial {...M.chrome} />
-        </mesh>
-      ))}
-      {/* Mounting tabs front/back with holes */}
-      <mesh position={[0, 0, len / 2 + 0.003]}>
-        <boxGeometry args={[w * 1.4, 0.0025, 0.006]} />
-        <meshStandardMaterial {...M.servoBlack} />
-      </mesh>
-      <mesh position={[0, 0, -len / 2 - 0.003]}>
-        <boxGeometry args={[w * 1.4, 0.0025, 0.006]} />
-        <meshStandardMaterial {...M.servoBlack} />
-      </mesh>
-      {/* Cable connector (back) */}
-      <mesh position={[0, -h * 0.3, -len / 2 - 0.002]}>
-        <boxGeometry args={[0.008 * scale, 0.004 * scale, 0.004 * scale]} />
-        <meshStandardMaterial {...M.servoFace} />
-      </mesh>
+    <mesh
+      geometry={processedGeometry}
+      position={position}
+      rotation={rotation}
+      castShadow
+      receiveShadow
+    >
+      <meshStandardMaterial {...material} />
+    </mesh>
+  );
+};
+
+// Joint group component that applies URDF joint transform
+const URDFJoint: React.FC<{
+  jointOrigin: { xyz: number[]; rpy: number[] };
+  rotation?: number;  // Additional rotation around joint axis (Z in URDF)
+  children: React.ReactNode;
+}> = ({ jointOrigin, rotation = 0, children }) => {
+  const position = urdfToThreePos(jointOrigin.xyz);
+  const baseRotation = urdfToThreeRot(jointOrigin.rpy);
+
+  // Joint rotation is around Z in URDF frame
+  // After coordinate transform, need to apply around correct axis
+  return (
+    <group position={position} rotation={baseRotation}>
+      <group rotation={[0, rotation, 0]}>
+        {children}
+      </group>
     </group>
   );
 };
 
-// Wire bundle component for external cable routing
-const WireBundle: React.FC<{
-  start: [number, number, number];
-  end: [number, number, number];
-  mid?: [number, number, number];
-}> = ({ start, end, mid }) => {
-  const wireRadius = 0.0012;
-  const wireSpacing = 0.003;
+const LoadingFallback: React.FC = () => (
+  <mesh position={[0, 0.15, 0]}>
+    <boxGeometry args={[0.05, 0.3, 0.05]} />
+    <meshStandardMaterial color="gray" wireframe />
+  </mesh>
+);
 
-  // Calculate direction and length
-  const dx = end[0] - start[0];
-  const dy = end[1] - start[1];
-  const dz = end[2] - start[2];
-  const length = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-  // Calculate rotation to point from start to end
-  const rotX = Math.atan2(Math.sqrt(dx * dx + dz * dz), dy);
-  const rotY = Math.atan2(dx, dz);
-
-  const midPoint: [number, number, number] = mid || [
-    (start[0] + end[0]) / 2,
-    (start[1] + end[1]) / 2,
-    (start[2] + end[2]) / 2,
-  ];
-
-  return (
-    <group position={midPoint} rotation={[rotX, rotY, 0]}>
-      {/* Red wire */}
-      <mesh position={[-wireSpacing, 0, 0]}>
-        <cylinderGeometry args={[wireRadius, wireRadius, length, 6]} />
-        <meshStandardMaterial {...M.wireRed} />
-      </mesh>
-      {/* Black wire */}
-      <mesh position={[0, 0, 0]}>
-        <cylinderGeometry args={[wireRadius, wireRadius, length, 6]} />
-        <meshStandardMaterial {...M.wireBlack} />
-      </mesh>
-      {/* White wire */}
-      <mesh position={[wireSpacing, 0, 0]}>
-        <cylinderGeometry args={[wireRadius, wireRadius, length, 6]} />
-        <meshStandardMaterial {...M.wireWhite} />
-      </mesh>
-    </group>
-  );
-};
-
-// Main SO-101 Arm Component
-export const SO100Arm3D: React.FC<SO100ArmProps> = ({ joints }) => {
+const SO100Arm3DInner: React.FC<SO100ArmProps> = ({ joints }) => {
+  // Convert degrees to radians for joint rotations
   const baseRot = (joints.base * Math.PI) / 180;
   const shoulderRot = (joints.shoulder * Math.PI) / 180;
   const elbowRot = (joints.elbow * Math.PI) / 180;
   const wristRot = (joints.wrist * Math.PI) / 180;
-  const gripperOpen = joints.gripper / 100;
-  const jawOffset = gripperOpen * D.jawMaxOpen;
+  const gripperRot = (joints.gripper / 100) * 1.74533;  // Max gripper angle from URDF
 
   return (
     <group>
-      {/* ==================== BASE_SO101 ==================== */}
+      {/* ========== BASE_LINK (fixed) ========== */}
       <RigidBody type="fixed" colliders={false}>
-        <CylinderCollider
-          args={[D.baseHeight / 2, D.baseOuterRadius]}
-          position={[0, D.baseHeight / 2, 0]}
-        />
+        <CuboidCollider args={[0.06, 0.04, 0.06]} position={[0, 0.04, 0]} />
 
-        {/* Base plate with sawtooth/stepped edge */}
-        <group position={[0, 0, 0]}>
-          {/* Main base body */}
-          <RoundedBox
-            args={[D.baseOuterRadius * 2, D.baseHeight, D.baseOuterRadius * 1.6]}
-            radius={0.004}
-            position={[0, D.baseHeight / 2, 0]}
-            castShadow
-            receiveShadow
-          >
-            <meshStandardMaterial {...M.white} />
-          </RoundedBox>
+        {/* Base plate */}
+        <URDFMesh file="base_so101_v2.stl" origin={URDF_VISUALS.base} />
 
-          {/* Rectangular slot pattern on base top (3x5 grid) */}
-          {[-1, 0, 1].map((row) =>
-            [-2, -1, 0, 1, 2].map((col) => (
-              <mesh
-                key={`slot-${row}-${col}`}
-                position={[row * 0.018, D.baseHeight + 0.001, col * 0.012]}
-              >
-                <boxGeometry args={[0.012, 0.003, 0.006]} />
-                <meshStandardMaterial {...M.whiteShade} />
-              </mesh>
-            ))
-          )}
+        {/* Motor holder tower */}
+        <URDFMesh file="base_motor_holder_so101_v1.stl" origin={URDF_VISUALS.base_motor_holder} />
 
-          {/* Front step/ledge detail */}
-          <RoundedBox
-            args={[D.baseOuterRadius * 1.5, D.baseHeight * 0.6, 0.015]}
-            radius={0.002}
-            position={[0, D.baseHeight * 0.3, D.baseOuterRadius * 0.8 + 0.008]}
-            castShadow
-          >
-            <meshStandardMaterial {...M.white} />
-          </RoundedBox>
-        </group>
-
-        {/* BASE_MOTOR_HOLDER_SO101 - motor housing with details */}
-        <group position={[0, D.baseHeight, 0]}>
-          {/* Main cylindrical housing */}
-          <Cylinder
-            args={[D.baseTowerRadius, D.baseTowerRadius + 0.003, D.baseTowerHeight, 24]}
-            position={[0, D.baseTowerHeight / 2, 0]}
-            castShadow
-            receiveShadow
-          >
-            <meshStandardMaterial {...M.white} />
-          </Cylinder>
-
-          {/* Dot-matrix holes on motor holder (2 columns of 3) */}
-          {[-1, 1].map((side) =>
-            [-1, 0, 1].map((row) => (
-              <mesh
-                key={`mh-hole-${side}-${row}`}
-                position={[side * (D.baseTowerRadius + 0.001), D.baseTowerHeight * 0.5 + row * 0.012, 0]}
-                rotation={[0, 0, Math.PI / 2]}
-              >
-                <cylinderGeometry args={[0.003, 0.003, 0.004, 8]} />
-                <meshStandardMaterial {...M.whiteShade} />
-              </mesh>
-            ))
-          )}
-
-          {/* Front cutout/window on motor holder */}
-          <mesh position={[0, D.baseTowerHeight * 0.6, D.baseTowerRadius - 0.002]}>
-            <boxGeometry args={[0.018, 0.022, 0.008]} />
-            <meshStandardMaterial {...M.whiteShade} />
-          </mesh>
-        </group>
-
-        {/* Base rotation servo (inside motor holder) */}
-        <group position={[0, D.baseHeight + D.baseTowerHeight / 2, 0]}>
-          <STS3215 scale={0.85} />
-        </group>
-
-        {/* Top mounting ring */}
-        <Cylinder
-          args={[D.baseTowerRadius + 0.004, D.baseTowerRadius + 0.006, 0.005, 24]}
-          position={[0, D.baseHeight + D.baseTowerHeight - 0.002, 0]}
-          castShadow
-        >
-          <meshStandardMaterial {...M.white} />
-        </Cylinder>
-
-        {/* Mounting screws on base corners */}
-        {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, z], i) => (
-          <mesh key={`base-screw-${i}`} position={[x * 0.038, D.baseHeight + 0.002, z * 0.028]}>
-            <cylinderGeometry args={[0.002, 0.002, 0.003, 6]} />
-            <meshStandardMaterial {...M.chrome} />
-          </mesh>
-        ))}
-
-        {/* PCB hint on back of base */}
-        <mesh position={[-0.025, D.baseHeight * 0.6, -D.baseOuterRadius * 0.6]}>
-          <boxGeometry args={[0.025, 0.003, 0.020]} />
-          <meshStandardMaterial {...M.pcbGreen} />
-        </mesh>
-
-        {/* Wire bundle from PCB to motor holder */}
-        <WireBundle
-          start={[-0.015, D.baseHeight, -D.baseOuterRadius * 0.5]}
-          end={[-0.015, D.baseHeight + D.baseTowerHeight * 0.8, -D.baseTowerRadius + 0.005]}
-        />
+        {/* Base servo */}
+        <URDFMesh file="sts3215_03a_v1.stl" origin={URDF_VISUALS.base_servo} material={MAT.servo} />
       </RigidBody>
 
-      {/* ==================== ROTATING ARM ==================== */}
-      <group
-        position={[0, D.baseHeight + D.baseTowerHeight + 0.006, 0]}
-        rotation={[0, -baseRot, 0]}
-      >
-        <RigidBody type="kinematicPosition" colliders={false}>
-          <CuboidCollider
-            args={[D.shoulderWidth / 2, D.shoulderHeight / 2, D.shoulderDepth / 2]}
-            position={[0, D.shoulderHeight / 2, 0]}
-          />
+      {/* ========== SHOULDER_LINK (shoulder_pan joint) ========== */}
+      <URDFJoint jointOrigin={URDF_JOINTS.shoulder_pan} rotation={baseRot}>
 
-          {/* ==================== ROTATION_PITCH_SO101 ==================== */}
-          {/* Shoulder bracket - butterfly/bowtie shape with diamond lattice */}
+        {/* Rotation pitch bracket */}
+        <URDFMesh file="rotation_pitch_so101_v1.stl" origin={URDF_VISUALS.rotation_pitch} />
 
-          {/* Left wing of butterfly shape */}
-          <group position={[-D.shoulderWidth / 2 + 0.012, D.shoulderHeight / 2, 0]}>
-            {/* Outer frame */}
-            <RoundedBox
-              args={[0.024, D.shoulderHeight, D.shoulderDepth]}
-              radius={0.003}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
-            {/* Diamond lattice cutouts (3x4 pattern) */}
-            {[-1.2, -0.4, 0.4, 1.2].map((row) =>
-              [-0.8, 0, 0.8].map((col) => (
-                <mesh
-                  key={`lat-l-${row}-${col}`}
-                  position={[0, row * 0.012, col * 0.01]}
-                  rotation={[0, 0, Math.PI / 4]}
-                >
-                  <boxGeometry args={[0.008, 0.008, D.shoulderDepth * 0.85]} />
-                  <meshStandardMaterial {...M.whiteShade} />
-                </mesh>
-              ))
-            )}
-          </group>
+        {/* Motor holder at shoulder */}
+        <URDFMesh file="motor_holder_so101_base_v1.stl" origin={URDF_VISUALS.motor_holder_base} />
 
-          {/* Right wing of butterfly shape */}
-          <group position={[D.shoulderWidth / 2 - 0.012, D.shoulderHeight / 2, 0]}>
-            {/* Outer frame */}
-            <RoundedBox
-              args={[0.024, D.shoulderHeight, D.shoulderDepth]}
-              radius={0.003}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
-            {/* Diamond lattice cutouts (3x4 pattern) */}
-            {[-1.2, -0.4, 0.4, 1.2].map((row) =>
-              [-0.8, 0, 0.8].map((col) => (
-                <mesh
-                  key={`lat-r-${row}-${col}`}
-                  position={[0, row * 0.012, col * 0.01]}
-                  rotation={[0, 0, Math.PI / 4]}
-                >
-                  <boxGeometry args={[0.008, 0.008, D.shoulderDepth * 0.85]} />
-                  <meshStandardMaterial {...M.whiteShade} />
-                </mesh>
-              ))
-            )}
-          </group>
+        {/* Shoulder servo */}
+        <URDFMesh file="sts3215_03a_v1.stl" origin={URDF_VISUALS.shoulder_servo} material={MAT.servo} />
 
-          {/* Center spine connecting the wings */}
-          <RoundedBox
-            args={[D.shoulderWidth - 0.024, D.shoulderWallThick * 1.5, D.shoulderDepth * 0.4]}
-            radius={0.002}
-            position={[0, D.shoulderHeight * 0.15, 0]}
-            castShadow
-          >
-            <meshStandardMaterial {...M.white} />
-          </RoundedBox>
+        {/* ========== UPPER_ARM_LINK (shoulder_lift joint) ========== */}
+        <URDFJoint jointOrigin={URDF_JOINTS.shoulder_lift} rotation={shoulderRot}>
 
-          {/* Top bar connecting wings */}
-          <RoundedBox
-            args={[D.shoulderWidth - 0.016, D.shoulderWallThick * 1.2, D.shoulderDepth * 0.35]}
-            radius={0.002}
-            position={[0, D.shoulderHeight - 0.006, D.shoulderDepth * 0.15]}
-            castShadow
-          >
-            <meshStandardMaterial {...M.white} />
-          </RoundedBox>
+          {/* Upper arm */}
+          <URDFMesh file="upper_arm_so101_v1.stl" origin={URDF_VISUALS.upper_arm} />
 
-          {/* Servo mounting plate (back, with dot pattern) */}
-          <group position={[0, D.shoulderHeight * 0.55, -D.shoulderDepth / 2 + 0.004]}>
-            <RoundedBox
-              args={[0.032, 0.038, 0.008]}
-              radius={0.002}
-              castShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
-            {/* Dot-matrix mounting holes (2x3) */}
-            {[-1, 1].map((x) =>
-              [-1, 0, 1].map((y) => (
-                <mesh
-                  key={`sh-dot-${x}-${y}`}
-                  position={[x * 0.008, y * 0.010, 0.005]}
-                >
-                  <cylinderGeometry args={[0.002, 0.002, 0.003, 8]} />
-                  <meshStandardMaterial {...M.whiteShade} />
-                </mesh>
-              ))
-            )}
-          </group>
+          {/* Upper arm servo (at elbow) */}
+          <URDFMesh file="sts3215_03a_v1.stl" origin={URDF_VISUALS.upper_arm_servo} material={MAT.servo} />
 
-          {/* Shoulder pitch servo */}
-          <group position={[0, D.shoulderHeight * 0.55, 0.004]} rotation={[0, 0, Math.PI / 2]}>
-            <STS3215 scale={0.85} />
-          </group>
+          {/* ========== LOWER_ARM_LINK (elbow_flex joint) ========== */}
+          <URDFJoint jointOrigin={URDF_JOINTS.elbow_flex} rotation={elbowRot}>
 
-          {/* Mounting screws on shoulder */}
-          {[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([x, y], i) => (
-            <mesh key={`sh-screw-${i}`} position={[x * 0.022, D.shoulderHeight * 0.55 + y * 0.014, D.shoulderDepth / 2 - 0.002]}>
-              <cylinderGeometry args={[0.0015, 0.0015, 0.004, 6]} />
-              <meshStandardMaterial {...M.chrome} />
-            </mesh>
-          ))}
+            {/* Under arm / forearm */}
+            <URDFMesh file="under_arm_so101_v1.stl" origin={URDF_VISUALS.under_arm} />
 
-          {/* Wire bundle from base to shoulder servo */}
-          <WireBundle
-            start={[D.shoulderWidth / 2 - 0.008, 0.010, -D.shoulderDepth / 2 + 0.008]}
-            end={[D.shoulderWidth / 2 - 0.008, D.shoulderHeight * 0.5, -D.shoulderDepth / 2 + 0.008]}
-          />
-        </RigidBody>
+            {/* Wrist motor holder */}
+            <URDFMesh file="motor_holder_so101_wrist_v1.stl" origin={URDF_VISUALS.motor_holder_wrist} />
 
-        {/* ==================== SHOULDER PITCH ==================== */}
-        <group
-          position={[0, D.shoulderHeight + 0.004, 0.006]}
-          rotation={[shoulderRot, 0, 0]}
-        >
-          {/* ==================== UPPER_ARM_SO101 ==================== */}
-          {/* Accurate two-pronged shape from STL analysis */}
-          {/* Structure: [left prong] [gap] [center bridge] [gap] [right prong] */}
-          <group position={[0, D.upperArmLength / 2 + 0.008, 0]}>
-            {/* Left outer prong - from STL: positioned at outer Z edge */}
-            <RoundedBox
-              args={[D.upperArmProngWidth, D.upperArmLength * 0.85, D.upperArmThick]}
-              radius={0.002}
-              position={[-D.upperArmWidth / 2 + D.upperArmProngWidth / 2, 0, 0]}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
+            {/* Lower arm servo */}
+            <URDFMesh file="sts3215_03a_v1.stl" origin={URDF_VISUALS.lower_arm_servo} material={MAT.servo} />
 
-            {/* Right outer prong */}
-            <RoundedBox
-              args={[D.upperArmProngWidth, D.upperArmLength * 0.85, D.upperArmThick]}
-              radius={0.002}
-              position={[D.upperArmWidth / 2 - D.upperArmProngWidth / 2, 0, 0]}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
+            {/* ========== WRIST_LINK (wrist_flex joint) ========== */}
+            <URDFJoint jointOrigin={URDF_JOINTS.wrist_flex} rotation={wristRot}>
 
-            {/* Center bridge - thicker solid section in middle */}
-            <RoundedBox
-              args={[D.upperArmBridgeWidth, D.upperArmLength * 0.5, D.upperArmThick]}
-              radius={0.002}
-              position={[0, 0, 0]}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
-
-            {/* Top connecting bar (servo mount end) - solid across full width */}
-            <RoundedBox
-              args={[D.upperArmWidth, 0.020, D.upperArmThick]}
-              radius={0.003}
-              position={[0, -D.upperArmLength / 2 + 0.010, 0]}
-              castShadow
-              receiveShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
-
-            {/* Bottom connecting bar (elbow end) */}
-            <RoundedBox
-              args={[D.upperArmWidth, 0.016, D.upperArmThick]}
-              radius={0.003}
-              position={[0, D.upperArmLength / 2 - 0.008, 0]}
-              castShadow
-            >
-              <meshStandardMaterial {...M.white} />
-            </RoundedBox>
-
-            {/* Diagonal reinforcement ribs connecting prongs to center */}
-            <mesh position={[-D.upperArmWidth / 4, -D.upperArmLength * 0.15, 0]} rotation={[0, 0, 0.3]}>
-              <boxGeometry args={[0.004, D.upperArmLength * 0.25, D.upperArmThick * 0.6]} />
-              <meshStandardMaterial {...M.whiteShade} />
-            </mesh>
-            <mesh position={[D.upperArmWidth / 4, -D.upperArmLength * 0.15, 0]} rotation={[0, 0, -0.3]}>
-              <boxGeometry args={[0.004, D.upperArmLength * 0.25, D.upperArmThick * 0.6]} />
-              <meshStandardMaterial {...M.whiteShade} />
-            </mesh>
-
-            {/* Dot-matrix holes at top (servo mounting - 2x3 grid) */}
-            {[-1, 0, 1].map((x) =>
-              [-1, 1].map((y) => (
-                <mesh
-                  key={`ua-dot-${x}-${y}`}
-                  position={[x * 0.010, -D.upperArmLength / 2 + 0.010 + y * 0.005, D.upperArmThick / 2 + 0.001]}
-                >
-                  <cylinderGeometry args={[0.002, 0.002, 0.003, 8]} />
-                  <meshStandardMaterial {...M.whiteShade} />
-                </mesh>
-              ))
-            )}
-
-            {/* Screw holes along the prongs */}
-            {[-0.35, 0, 0.35].map((pos, i) => (
-              <mesh key={`ua-screw-${i}`} position={[D.upperArmWidth / 2 - D.upperArmProngWidth / 2, pos * D.upperArmLength * 0.7, D.upperArmThick / 2 + 0.001]}>
-                <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                <meshStandardMaterial {...M.chrome} />
-              </mesh>
-            ))}
-            {[-0.35, 0, 0.35].map((pos, i) => (
-              <mesh key={`ua-screw2-${i}`} position={[-D.upperArmWidth / 2 + D.upperArmProngWidth / 2, pos * D.upperArmLength * 0.7, D.upperArmThick / 2 + 0.001]}>
-                <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                <meshStandardMaterial {...M.chrome} />
-              </mesh>
-            ))}
-
-            {/* Wire bundle running along upper arm (external routing) */}
-            <WireBundle
-              start={[D.upperArmWidth / 2 + 0.003, -D.upperArmLength / 2 + 0.015, D.upperArmThick / 2 - 0.002]}
-              end={[D.upperArmWidth / 2 + 0.003, D.upperArmLength / 2 - 0.010, D.upperArmThick / 2 - 0.002]}
-            />
-          </group>
-
-          {/* ==================== ELBOW ==================== */}
-          <group
-            position={[0, D.upperArmLength + 0.012, 0]}
-            rotation={[elbowRot, 0, 0]}
-          >
-            {/* Elbow joint housing - C-shaped bracket */}
-            <group position={[0, 0.010, 0]}>
-              {/* Left elbow bracket */}
-              <RoundedBox
-                args={[0.008, 0.028, D.upperArmThick + 0.006]}
-                radius={0.002}
-                position={[-D.upperArmWidth / 2, 0, 0]}
-                castShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-              {/* Right elbow bracket */}
-              <RoundedBox
-                args={[0.008, 0.028, D.upperArmThick + 0.006]}
-                radius={0.002}
-                position={[D.upperArmWidth / 2, 0, 0]}
-                castShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-              {/* Back plate */}
-              <RoundedBox
-                args={[D.upperArmWidth + 0.016, 0.022, 0.006]}
-                radius={0.002}
-                position={[0, 0, -D.upperArmThick / 2 - 0.003]}
-                castShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-            </group>
-
-            {/* Elbow servo */}
-            <group position={[0, 0.010, 0]} rotation={[0, 0, Math.PI / 2]}>
-              <STS3215 scale={0.78} />
-            </group>
-
-            {/* ==================== UNDER_ARM_SO101 (Forearm) ==================== */}
-            {/* Accurate two-pronged shape from STL analysis */}
-            <group position={[0, 0.026 + D.forearmLength / 2, 0]}>
-              {/* Left outer prong */}
-              <RoundedBox
-                args={[D.forearmProngWidth, D.forearmLength * 0.82, D.forearmThick]}
-                radius={0.002}
-                position={[-D.forearmWidth / 2 + D.forearmProngWidth / 2, 0, 0]}
-                castShadow
-                receiveShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-
-              {/* Right outer prong */}
-              <RoundedBox
-                args={[D.forearmProngWidth, D.forearmLength * 0.82, D.forearmThick]}
-                radius={0.002}
-                position={[D.forearmWidth / 2 - D.forearmProngWidth / 2, 0, 0]}
-                castShadow
-                receiveShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-
-              {/* Center bridge - wider than upper arm per STL */}
-              <RoundedBox
-                args={[D.forearmBridgeWidth, D.forearmLength * 0.45, D.forearmThick]}
-                radius={0.002}
-                position={[0, 0, 0]}
-                castShadow
-                receiveShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-
-              {/* Top connecting bar (elbow end) */}
-              <RoundedBox
-                args={[D.forearmWidth, 0.018, D.forearmThick]}
-                radius={0.003}
-                position={[0, -D.forearmLength / 2 + 0.009, 0]}
-                castShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-
-              {/* Bottom connecting bar (wrist end) */}
-              <RoundedBox
-                args={[D.forearmWidth, 0.014, D.forearmThick]}
-                radius={0.003}
-                position={[0, D.forearmLength / 2 - 0.007, 0]}
-                castShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
-
-              {/* Diagonal reinforcement ribs */}
-              <mesh position={[-D.forearmWidth / 4, -D.forearmLength * 0.12, 0]} rotation={[0, 0, 0.25]}>
-                <boxGeometry args={[0.003, D.forearmLength * 0.22, D.forearmThick * 0.55]} />
-                <meshStandardMaterial {...M.whiteShade} />
-              </mesh>
-              <mesh position={[D.forearmWidth / 4, -D.forearmLength * 0.12, 0]} rotation={[0, 0, -0.25]}>
-                <boxGeometry args={[0.003, D.forearmLength * 0.22, D.forearmThick * 0.55]} />
-                <meshStandardMaterial {...M.whiteShade} />
-              </mesh>
-
-              {/* Screw holes along prongs */}
-              {[-0.3, 0, 0.3].map((pos, i) => (
-                <mesh key={`fa-screw-${i}`} position={[D.forearmWidth / 2 - D.forearmProngWidth / 2, pos * D.forearmLength * 0.65, D.forearmThick / 2 + 0.001]}>
-                  <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                  <meshStandardMaterial {...M.chrome} />
-                </mesh>
-              ))}
-              {[-0.3, 0, 0.3].map((pos, i) => (
-                <mesh key={`fa-screw2-${i}`} position={[-D.forearmWidth / 2 + D.forearmProngWidth / 2, pos * D.forearmLength * 0.65, D.forearmThick / 2 + 0.001]}>
-                  <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                  <meshStandardMaterial {...M.chrome} />
-                </mesh>
-              ))}
-
-              {/* Wire bundle running along forearm */}
-              <WireBundle
-                start={[D.forearmWidth / 2 + 0.003, -D.forearmLength / 2 + 0.012, D.forearmThick / 2 - 0.002]}
-                end={[D.forearmWidth / 2 + 0.003, D.forearmLength / 2 - 0.008, D.forearmThick / 2 - 0.002]}
-              />
-            </group>
-
-            {/* ==================== WRIST ==================== */}
-            <group
-              position={[0, 0.026 + D.forearmLength + 0.006, 0]}
-              rotation={[wristRot, 0, 0]}
-            >
-              {/* MOTOR_HOLDER_SO101_WRIST - C-shaped bracket */}
-              <group position={[0, D.wristBlockHeight / 2, 0]}>
-                {/* Left side */}
-                <RoundedBox
-                  args={[0.008, D.wristBlockHeight, D.wristBlockDepth]}
-                  radius={0.002}
-                  position={[-D.wristBlockWidth / 2 + 0.004, 0, 0]}
-                  castShadow
-                >
-                  <meshStandardMaterial {...M.white} />
-                </RoundedBox>
-                {/* Right side */}
-                <RoundedBox
-                  args={[0.008, D.wristBlockHeight, D.wristBlockDepth]}
-                  radius={0.002}
-                  position={[D.wristBlockWidth / 2 - 0.004, 0, 0]}
-                  castShadow
-                >
-                  <meshStandardMaterial {...M.white} />
-                </RoundedBox>
-                {/* Back plate with dots */}
-                <RoundedBox
-                  args={[D.wristBlockWidth, D.wristBlockHeight, 0.006]}
-                  radius={0.002}
-                  position={[0, 0, -D.wristBlockDepth / 2 + 0.003]}
-                  castShadow
-                >
-                  <meshStandardMaterial {...M.white} />
-                </RoundedBox>
-                {/* Dot-matrix holes */}
-                {[-1, 1].map((x) =>
-                  [-1, 0, 1].map((y) => (
-                    <mesh
-                      key={`wr-dot-${x}-${y}`}
-                      position={[x * 0.007, y * 0.007, -D.wristBlockDepth / 2 + 0.007]}
-                    >
-                      <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                      <meshStandardMaterial {...M.whiteShade} />
-                    </mesh>
-                  ))
-                )}
-              </group>
+              {/* Wrist roll/pitch bracket */}
+              <URDFMesh file="wrist_roll_pitch_so101_v2.stl" origin={URDF_VISUALS.wrist_roll_pitch} />
 
               {/* Wrist servo */}
-              <group position={[0, D.wristBlockHeight / 2, 0.002]} rotation={[0, 0, Math.PI / 2]}>
-                <STS3215 scale={0.60} />
-              </group>
+              <URDFMesh file="sts3215_03a_no_horn_v1.stl" origin={URDF_VISUALS.wrist_servo} material={MAT.servo} />
 
-              {/* Wrist roll connector */}
-              <RoundedBox
-                args={[0.022, 0.018, 0.022]}
-                radius={0.004}
-                position={[0, D.wristBlockHeight + 0.009, 0]}
-                castShadow
-              >
-                <meshStandardMaterial {...M.white} />
-              </RoundedBox>
+              {/* ========== GRIPPER_LINK (wrist_roll joint) ========== */}
+              <URDFJoint jointOrigin={URDF_JOINTS.wrist_roll} rotation={0}>
 
-              {/* ==================== GRIPPER ==================== */}
-              <group position={[0, D.wristBlockHeight + 0.024, 0]}>
-                {/* Gripper palm/base */}
-                <RoundedBox
-                  args={[D.gripperPalmWidth, D.gripperPalmHeight, D.gripperPalmDepth]}
-                  radius={0.003}
-                  position={[0, 0, 0]}
-                  castShadow
-                  receiveShadow
-                >
-                  <meshStandardMaterial {...M.white} />
-                </RoundedBox>
+                {/* Gripper follower base */}
+                <URDFMesh file="wrist_roll_follower_so101_v1.stl" origin={URDF_VISUALS.wrist_roll_follower} />
 
-                {/* Gripper servo (between jaws) */}
-                <group position={[0, D.gripperPalmHeight / 2 + 0.008, 0]} rotation={[0, 0, 0]}>
-                  <STS3215 scale={0.52} />
-                </group>
+                {/* Gripper servo */}
+                <URDFMesh file="sts3215_03a_v1.stl" origin={URDF_VISUALS.gripper_servo} material={MAT.servo} />
 
-                {/* Fixed jaw (right) - POINTED TRIANGULAR FINGER with holes */}
-                <group position={[D.gripperPalmWidth / 2 - 0.006, D.gripperPalmHeight / 2 + 0.022, 0]}>
-                  {/* Main finger body - tapered */}
-                  <mesh castShadow receiveShadow>
-                    <boxGeometry args={[0.012, D.fixedJawLength * 0.7, D.fixedJawThick]} />
-                    <meshStandardMaterial {...M.white} />
-                  </mesh>
-                  {/* Tapered tip section */}
-                  <mesh position={[0.001, D.fixedJawLength * 0.35 + 0.012, 0]} castShadow>
-                    <boxGeometry args={[0.008, 0.024, D.fixedJawThick * 0.85]} />
-                    <meshStandardMaterial {...M.white} />
-                  </mesh>
-                  {/* Pointed tip */}
-                  <mesh position={[0.002, D.fixedJawLength * 0.35 + 0.028, 0]} rotation={[0, 0, Math.PI / 6]} castShadow>
-                    <boxGeometry args={[0.005, 0.012, D.fixedJawThick * 0.7]} />
-                    <meshStandardMaterial {...M.white} />
-                  </mesh>
-                  {/* Line of holes along finger */}
-                  {[0, 0.012, 0.024, 0.036].map((y, i) => (
-                    <mesh key={`fj-hole-${i}`} position={[0, y - 0.008, D.fixedJawThick / 2 + 0.001]}>
-                      <cylinderGeometry args={[0.0012, 0.0012, 0.003, 6]} />
-                      <meshStandardMaterial {...M.whiteShade} />
-                    </mesh>
-                  ))}
-                  {/* Mounting screws */}
-                  <mesh position={[0, -D.fixedJawLength * 0.3, D.fixedJawThick / 2 + 0.001]}>
-                    <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                    <meshStandardMaterial {...M.chrome} />
-                  </mesh>
-                </group>
-
-                {/* Moving jaw (left) - POINTED TRIANGULAR FINGER with holes */}
-                <group position={[-D.gripperPalmWidth / 2 + 0.006 + jawOffset, D.gripperPalmHeight / 2 + 0.022, 0]}>
-                  {/* Main finger body - tapered */}
-                  <mesh castShadow receiveShadow>
-                    <boxGeometry args={[0.012, D.movingJawLength * 0.7, D.movingJawThick]} />
-                    <meshStandardMaterial {...M.white} />
-                  </mesh>
-                  {/* Tapered tip section */}
-                  <mesh position={[-0.001, D.movingJawLength * 0.35 + 0.012, 0]} castShadow>
-                    <boxGeometry args={[0.008, 0.024, D.movingJawThick * 0.85]} />
-                    <meshStandardMaterial {...M.white} />
-                  </mesh>
-                  {/* Pointed tip */}
-                  <mesh position={[-0.002, D.movingJawLength * 0.35 + 0.028, 0]} rotation={[0, 0, -Math.PI / 6]} castShadow>
-                    <boxGeometry args={[0.005, 0.012, D.movingJawThick * 0.7]} />
-                    <meshStandardMaterial {...M.white} />
-                  </mesh>
-                  {/* Line of holes along finger */}
-                  {[0, 0.012, 0.024, 0.036].map((y, i) => (
-                    <mesh key={`mj-hole-${i}`} position={[0, y - 0.008, D.movingJawThick / 2 + 0.001]}>
-                      <cylinderGeometry args={[0.0012, 0.0012, 0.003, 6]} />
-                      <meshStandardMaterial {...M.whiteShade} />
-                    </mesh>
-                  ))}
-                  {/* Mounting screws */}
-                  <mesh position={[0, -D.movingJawLength * 0.3, D.movingJawThick / 2 + 0.001]}>
-                    <cylinderGeometry args={[0.0015, 0.0015, 0.003, 6]} />
-                    <meshStandardMaterial {...M.chrome} />
-                  </mesh>
-                </group>
-
-                {/* Wire bundle to gripper servo - forms a small loop */}
-                <WireBundle
-                  start={[D.gripperPalmWidth / 2 + 0.002, -0.008, D.gripperPalmDepth / 2 - 0.003]}
-                  end={[D.gripperPalmWidth / 2 - 0.008, D.gripperPalmHeight / 2 + 0.012, D.gripperPalmDepth / 2 - 0.003]}
-                />
-
-              </group>
-              {/* End Gripper */}
-
-            </group>
-            {/* End Wrist */}
-
-          </group>
-          {/* End Elbow */}
-
-        </group>
-        {/* End Shoulder Pitch */}
-
-      </group>
-      {/* End Rotating Structure */}
-
+                {/* ========== MOVING_JAW (gripper joint) ========== */}
+                <URDFJoint jointOrigin={URDF_JOINTS.gripper} rotation={gripperRot}>
+                  <URDFMesh file="moving_jaw_so101_v1.stl" origin={URDF_VISUALS.moving_jaw} />
+                </URDFJoint>
+              </URDFJoint>
+            </URDFJoint>
+          </URDFJoint>
+        </URDFJoint>
+      </URDFJoint>
     </group>
+  );
+};
+
+export const SO100Arm3D: React.FC<SO100ArmProps> = ({ joints }) => {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <SO100Arm3DInner joints={joints} />
+    </Suspense>
   );
 };
