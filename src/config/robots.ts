@@ -23,6 +23,16 @@ export const ROBOT_PROFILES: RobotProfile[] = [
       wristRoll: 0,
       gripper: 50,
     },
+    // Gear ratios from LeRobot/HuggingFace documentation
+    // Follower arm uses STS3215 motors with uniform 1/345 gearing
+    gearRatios: {
+      base: { ratio: '1/345', motorType: 'STS3215' },         // shoulder_pan
+      shoulder: { ratio: '1/345', motorType: 'STS3215' },     // shoulder_lift
+      elbow: { ratio: '1/345', motorType: 'STS3215' },        // elbow_flex
+      wrist: { ratio: '1/345', motorType: 'STS3215' },        // wrist_flex
+      wristRoll: { ratio: '1/345', motorType: 'STS3215' },    // wrist_roll
+      gripper: { ratio: '1/345', motorType: 'STS3215' },      // gripper
+    },
   },
   {
     id: 'elegoo-smart-car-v4',

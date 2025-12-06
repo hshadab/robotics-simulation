@@ -142,8 +142,11 @@ describe('Code Exporter', () => {
       const exports = getSupportedExports('so-101');
 
       expect(exports.length).toBeGreaterThan(0);
-      expect(exports[0].kitId).toBe('arduino-uno');
-      expect(exports[0].languages).toContain('arduino');
+      // LeRobot is now the first option for SO-101
+      expect(exports[0].kitId).toBe('lerobot');
+      expect(exports[0].languages).toContain('lerobot');
+      // Arduino should also be available
+      expect(exports.some(e => e.kitId === 'arduino-uno')).toBe(true);
     });
 
     it('should return supported exports for elegoo-smart-car-v4', () => {
