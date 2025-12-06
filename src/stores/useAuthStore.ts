@@ -37,6 +37,8 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         set({ user: null, isAuthenticated: false });
+        // Also clear from localStorage to ensure clean logout
+        localStorage.removeItem('robosim-auth');
       },
     }),
     {

@@ -129,9 +129,11 @@ export const MainLayout: React.FC = () => {
           </span>
           <button
             onClick={logout}
-            className="flex items-center gap-1 text-slate-400 hover:text-white transition text-sm"
+            className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 transition text-sm px-2 py-1 hover:bg-red-500/10 rounded"
+            title="Log out"
           >
             <LogOut className="w-4 h-4" />
+            <span>Logout</span>
           </button>
         </div>
       </header>
