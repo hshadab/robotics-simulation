@@ -2,9 +2,9 @@ import type { RobotProfile } from '../types';
 
 export const ROBOT_PROFILES: RobotProfile[] = [
   {
-    id: 'so-100',
+    id: 'so-101',
     name: 'SO-101',
-    manufacturer: 'LeRobot',
+    manufacturer: 'The Robot Studio',
     type: 'arm',
     description: '6-DOF Open-Source Desktop Arm for AI/ML Research (SO-101)',
     limits: {
@@ -95,10 +95,10 @@ export const ROBOT_PROFILES: RobotProfile[] = [
   },
 ];
 
-export const DEFAULT_ROBOT_ID = 'so-100';
+export const DEFAULT_ROBOT_ID = 'so-101';
 
 export const getDefaultCode = (robotId: string): string => {
-  if (robotId === 'so-100') {
+  if (robotId === 'so-101') {
     return `// SO-101 Robot Arm Control Code
 // LeRobot / The Robot Studio Open-Source Arm
 // https://github.com/TheRobotStudio/SO-ARM100

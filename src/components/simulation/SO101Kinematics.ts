@@ -1,5 +1,5 @@
 /**
- * SO-100/SO-101 Robot Arm Kinematics
+ * SO-101 Robot Arm Kinematics
  * Forward kinematics calculations for the LeRobot / The Robot Studio arm
  */
 
@@ -7,7 +7,7 @@ import type { JointState } from '../../types';
 
 // SO-101 Kinematics (based on official URDF: so101_new_calib.urdf)
 // Joint chain: base → shoulder_pan → shoulder_lift → elbow_flex → wrist_flex → wrist_roll → gripper
-export const SO100_DIMS = {
+export const SO101_DIMS = {
   // Base dimensions
   baseHeight: 0.025,       // Base plate height
   baseRadius: 0.045,       // Base plate radius
@@ -31,8 +31,8 @@ export const SO100_DIMS = {
  * @param joints - Joint state with base, shoulder, elbow, wrist angles in degrees
  * @returns [x, y, z] position of the gripper tip in meters
  */
-export const calculateSO100GripperPosition = (joints: JointState): [number, number, number] => {
-  const dims = SO100_DIMS;
+export const calculateSO101GripperPosition = (joints: JointState): [number, number, number] => {
+  const dims = SO101_DIMS;
 
   // Convert joint angles to radians
   const shoulderPanRad = (joints.base * Math.PI) / 180;

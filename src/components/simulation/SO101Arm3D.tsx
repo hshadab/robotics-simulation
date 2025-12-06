@@ -10,7 +10,7 @@ import URDFLoader from 'urdf-loader';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import type { JointState } from '../../types';
 
-interface SO100ArmProps {
+interface SO101ArmProps {
   joints: JointState;
 }
 
@@ -44,7 +44,7 @@ const SERVO_MATERIAL = new THREE.MeshStandardMaterial({
   roughness: 0.3,
 });
 
-const URDFRobot: React.FC<SO100ArmProps> = ({ joints }) => {
+const URDFRobot: React.FC<SO101ArmProps> = ({ joints }) => {
   const groupRef = useRef<THREE.Group>(null);
   const [robot, setRobot] = useState<THREE.Object3D | null>(null);
   const robotRef = useRef<ReturnType<typeof URDFLoader.prototype.parse> | null>(null);
@@ -145,7 +145,7 @@ const URDFRobot: React.FC<SO100ArmProps> = ({ joints }) => {
   );
 };
 
-export const SO100Arm3D: React.FC<SO100ArmProps> = ({ joints }) => {
+export const SO101Arm3D: React.FC<SO101ArmProps> = ({ joints }) => {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <URDFRobot joints={joints} />
