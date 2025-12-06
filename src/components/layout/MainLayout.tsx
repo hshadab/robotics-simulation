@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SimulationViewport, SensorPanel } from '../simulation';
 import { ChatPanel } from '../chat';
-import { JointControls, PresetButtons, EnvironmentSelector, ChallengePanel, DatasetRecorderPanel, HandTrackingPanel, ShareButton } from '../controls';
+import { JointControls, PresetButtons, EnvironmentSelector, ChallengePanel, DatasetRecorderPanel, DatasetPlayerPanel, HandTrackingPanel, ShareButton } from '../controls';
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';
 import { ApiKeySettings } from '../settings/ApiKeySettings';
 import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings } from 'lucide-react';
@@ -177,6 +177,7 @@ const SimulateTab: React.FC = () => {
           <PresetButtons />
           <HandTrackingPanel />
           <DatasetRecorderPanel />
+          <DatasetPlayerPanel />
           <div className="min-h-0 max-h-56 overflow-hidden">
             <ChallengePanel />
           </div>

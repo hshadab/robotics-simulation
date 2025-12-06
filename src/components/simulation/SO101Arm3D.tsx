@@ -78,7 +78,7 @@ const URDFRobot: React.FC<SO101ArmProps> = ({ joints }) => {
           undefined,
           (error) => {
             console.error('Error loading STL:', path, error);
-            onComplete(new THREE.Object3D(), error as Error);
+            onComplete(new THREE.Object3D(), error as unknown as Error);
           }
         );
       });

@@ -36,7 +36,7 @@ export interface HardwareKit {
   documentationUrl?: string;
   pins: HardwarePin[];
   supportedProtocols: ('I2C' | 'SPI' | 'UART' | 'PWM' | 'ADC' | 'DAC' | 'WiFi' | 'Bluetooth' | 'BLE')[];
-  programmingLanguages: ('arduino' | 'micropython' | 'circuitpython' | 'c')[];
+  programmingLanguages: ('arduino' | 'micropython' | 'circuitpython' | 'c' | 'lerobot')[];
   libraries: HardwareLibrary[];
 }
 

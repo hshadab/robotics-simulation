@@ -9,8 +9,7 @@
  * Format spec: https://huggingface.co/docs/lerobot/en/lerobot-dataset-v3
  */
 
-import type { Episode, Frame } from './datasetExporter';
-import type { ActiveRobotType } from '../types';
+import type { Episode } from './datasetExporter';
 
 // LeRobot dataset structure
 export interface LeRobotDatasetInfo {
@@ -47,11 +46,6 @@ export interface LeRobotStats {
     mean: number[];
     std: number[];
   };
-}
-
-interface LeRobotTask {
-  task_index: number;
-  task: string;
 }
 
 interface LeRobotEpisodeMeta {
@@ -153,7 +147,7 @@ const DEFAULT_FEATURES: Record<string, FeatureInfo> = {
 /**
  * Convert RoboSim episodes to LeRobot tabular format
  */
-function episodesToTabular(episodes: Episode[], fps: number): {
+function episodesToTabular(episodes: Episode[], _fps: number): {
   rows: LeRobotRow[];
   stats: LeRobotStats;
 } {

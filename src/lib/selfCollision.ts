@@ -7,16 +7,9 @@
 
 import type { JointState } from '../types';
 
-/**
- * SO-101 arm link lengths (approximate, in arbitrary units)
- * Used for collision zone calculations
- */
-const ARM_GEOMETRY = {
-  baseHeight: 0.08,      // Height of base
-  shoulderLength: 0.10,  // Shoulder to elbow
-  forearmLength: 0.10,   // Elbow to wrist
-  wristLength: 0.08,     // Wrist to gripper
-};
+// SO-101 arm link lengths (approximate, in arbitrary units)
+// Reserved for future geometric collision detection:
+// baseHeight: 0.08, shoulderLength: 0.10, forearmLength: 0.10, wristLength: 0.08
 
 /**
  * Check if the current joint configuration would cause self-collision

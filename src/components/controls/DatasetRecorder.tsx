@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Circle,
-  Square,
   Download,
   Trash2,
   Database,
@@ -9,7 +8,6 @@ import {
   CheckCircle,
   XCircle,
   Upload,
-  Settings,
   ChevronDown,
   ChevronUp,
   ExternalLink,
@@ -17,7 +15,7 @@ import {
 import { Button } from '../common';
 import { useAppStore } from '../../stores/useAppStore';
 import { DatasetRecorder as Recorder, downloadDataset, type Episode } from '../../lib/datasetExporter';
-import { exportLeRobotDataset, validateForLeRobot, exportMetadataOnly } from '../../lib/lerobotExporter';
+import { exportLeRobotDataset, validateForLeRobot } from '../../lib/lerobotExporter';
 import { CanvasVideoRecorder } from '../../lib/videoRecorder';
 
 type ExportFormat = 'json' | 'lerobot';
@@ -37,7 +35,6 @@ export const DatasetRecorderPanel: React.FC = () => {
   const [taskName, setTaskName] = useState('manipulation_task');
   const [datasetName, setDatasetName] = useState('robosim_dataset');
   const [showSettings, setShowSettings] = useState(false);
-  const [showValidation, setShowValidation] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   // Refs
