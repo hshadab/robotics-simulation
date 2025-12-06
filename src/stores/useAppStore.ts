@@ -28,6 +28,7 @@ import {
   CHALLENGES,
 } from '../config/environments';
 import { DEFAULT_HUMANOID_STATE } from '../components/simulation/defaults';
+import { preventSelfCollision } from '../lib/selfCollision';
 
 interface AppState {
   // Robot State
@@ -231,9 +232,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setJoints: (joints: Partial<JointState>) => {
     const currentJoints = get().joints;
     const robot = get().selectedRobot;
+    const robotId = get().selectedRobotId;
 
-    // Apply limits
-    const newJoints = { ...currentJoints };
+    // Apply individual joint limits
+    let newJoints = { ...currentJoints };
     for (const [key, value] of Object.entries(joints)) {
       const jointKey = key as keyof JointState;
       if (robot && robot.limits[jointKey]) {
@@ -243,6 +245,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         newJoints[jointKey] = value as number;
       }
     }
+
+    // Apply self-collision prevention for articulated arms
+    newJoints = preventSelfCollision(newJoints, robotId);
 
     set({ joints: newJoints });
   },
