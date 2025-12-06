@@ -1,7 +1,8 @@
 import { useCallback, useRef } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import type { JointState, ActiveRobotType, WheeledRobotState, DroneState, HumanoidState } from '../types';
-import { callClaudeAPI, getClaudeApiKey } from '../lib/claudeApi';
+import { callClaudeAPI, getClaudeApiKey, type FullRobotState } from '../lib/claudeApi';
+import { robotContext } from '../lib/robotContext';
 
 // System prompts for different robot types
 export const SYSTEM_PROMPTS: Record<ActiveRobotType, string> = {
@@ -62,6 +63,8 @@ export const useLLMChat = () => {
     setDrone,
     humanoid,
     setHumanoid,
+    sensors,
+    isAnimating,
   } = useAppStore();
 
   const jointsRef = useRef<JointState>(joints);
@@ -75,6 +78,12 @@ export const useLLMChat = () => {
 
   const humanoidRef = useRef<HumanoidState>(humanoid);
   humanoidRef.current = humanoid;
+
+  const sensorsRef = useRef(sensors);
+  sensorsRef.current = sensors;
+
+  const isAnimatingRef = useRef(isAnimating);
+  isAnimatingRef.current = isAnimating;
 
   const animateToJoints = useCallback(
     (targetJoints: Partial<JointState>, duration = 600): Promise<void> => {
@@ -175,31 +184,32 @@ export const useLLMChat = () => {
       setLLMLoading(true);
 
       try {
-        // Get current state based on robot type
-        let currentState: JointState | WheeledRobotState | DroneState | HumanoidState;
-        switch (activeRobotType) {
-          case 'wheeled':
-            currentState = wheeledRef.current;
-            break;
-          case 'drone':
-            currentState = droneRef.current;
-            break;
-          case 'humanoid':
-            currentState = humanoidRef.current;
-            break;
-          default:
-            currentState = jointsRef.current;
-        }
+        // Build full robot state for semantic context
+        const fullState: FullRobotState = {
+          joints: jointsRef.current,
+          wheeledRobot: wheeledRef.current,
+          drone: droneRef.current,
+          humanoid: humanoidRef.current,
+          sensors: sensorsRef.current,
+          isAnimating: isAnimatingRef.current,
+        };
 
         // Use Claude API (falls back to simulation if no API key)
         const apiKey = getClaudeApiKey();
-        const response = await callClaudeAPI(message, activeRobotType, currentState, apiKey || undefined);
+        const response = await callClaudeAPI(message, activeRobotType, fullState, apiKey || undefined);
 
         if (response.action === 'error') {
           addMessage({
             role: 'assistant',
             content: response.description || 'I could not understand that command.',
             isError: true,
+          });
+          robotContext.emit({ type: 'error', timestamp: new Date(), details: response.description });
+        } else if (response.action === 'query' && response.clarifyingQuestion) {
+          // LLM is asking for clarification
+          addMessage({
+            role: 'assistant',
+            content: response.clarifyingQuestion,
           });
         } else {
           addMessage({
@@ -217,13 +227,28 @@ export const useLLMChat = () => {
             const sequence = Array.isArray(response.joints)
               ? response.joints
               : [response.joints];
-            await executeArmSequence(sequence);
+
+            // Record action and start task tracking
+            robotContext.startTask(response.description);
+
+            try {
+              await executeArmSequence(sequence);
+              robotContext.completeTask(response.description);
+            } catch (err) {
+              robotContext.failTask(err instanceof Error ? err.message : 'Movement failed');
+            }
           } else if (activeRobotType === 'wheeled' && response.wheeledAction) {
+            robotContext.startTask(response.description);
             await executeWheeledAction(response.wheeledAction, response.duration);
+            robotContext.completeTask();
           } else if (activeRobotType === 'drone' && response.droneAction) {
+            robotContext.startTask(response.description);
             await executeDroneAction(response.droneAction, response.duration);
+            robotContext.completeTask();
           } else if (activeRobotType === 'humanoid' && response.humanoidAction) {
+            robotContext.startTask(response.description);
             await executeHumanoidAction(response.humanoidAction, response.duration);
+            robotContext.completeTask();
           }
         }
       } catch (error) {
@@ -232,6 +257,7 @@ export const useLLMChat = () => {
           content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
           isError: true,
         });
+        robotContext.emit({ type: 'error', timestamp: new Date(), details: error instanceof Error ? error.message : 'Unknown error' });
       } finally {
         setLLMLoading(false);
       }

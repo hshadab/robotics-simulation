@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { MessageCircle, Trash2, Sparkles, Key, Check } from 'lucide-react';
+import { MessageCircle, Trash2, Sparkles, Key, Check, Radio } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { QuickPrompts } from './QuickPrompts';
@@ -7,14 +7,53 @@ import { Button } from '../common';
 import { useAppStore } from '../../stores/useAppStore';
 import { useLLMChat } from '../../hooks/useLLMChat';
 import { getClaudeApiKey, setClaudeApiKey } from '../../lib/claudeApi';
+import { useRobotContext } from '../../hooks/useRobotContext';
+import { eventToMessage } from '../../lib/semanticState';
 
 export const ChatPanel: React.FC = () => {
-  const { messages, isLLMLoading, clearMessages, isAnimating } = useAppStore();
+  const { messages, isLLMLoading, clearMessages, isAnimating, addMessage } = useAppStore();
   const { sendMessage } = useLLMChat();
+  const { subscribeToAllEvents, isMoving, getBriefStatus } = useRobotContext();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [hasApiKey, setHasApiKey] = useState(!!getClaudeApiKey());
   const [showApiInput, setShowApiInput] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [robotStatus, setRobotStatus] = useState<string>('');
+
+  // Subscribe to robot events and show important ones in chat
+  useEffect(() => {
+    const unsubscribe = subscribeToAllEvents((event) => {
+      // Filter to important events that should show in chat
+      const chatEvents = [
+        'task_completed',
+        'task_failed',
+        'collision_detected',
+        'error',
+        'object_grasped',
+        'object_released',
+      ];
+
+      if (chatEvents.includes(event.type)) {
+        const content = eventToMessage(event);
+        addMessage({
+          role: 'system',
+          content,
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, [subscribeToAllEvents, addMessage]);
+
+  // Update robot status periodically
+  useEffect(() => {
+    const updateStatus = () => {
+      setRobotStatus(getBriefStatus());
+    };
+    updateStatus();
+    const interval = setInterval(updateStatus, 1000);
+    return () => clearInterval(interval);
+  }, [getBriefStatus]);
 
   const handleSaveApiKey = () => {
     if (apiKeyInput.trim()) {
@@ -68,6 +107,14 @@ export const ChatPanel: React.FC = () => {
         >
           <Trash2 className="w-4 h-4" />
         </Button>
+      </div>
+
+      {/* Robot Status Bar */}
+      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-700/30 bg-slate-900/50 text-xs">
+        <Radio className={`w-3 h-3 ${isMoving ? 'text-green-400 animate-pulse' : 'text-slate-500'}`} />
+        <span className={`${isMoving ? 'text-green-400' : 'text-slate-500'}`}>
+          {robotStatus || 'Connecting...'}
+        </span>
       </div>
 
       {/* API Key Input */}

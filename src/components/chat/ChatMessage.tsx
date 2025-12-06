@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, Radio } from 'lucide-react';
 import type { ChatMessage as ChatMessageType } from '../../types';
 
 interface ChatMessageProps {
@@ -8,7 +8,20 @@ interface ChatMessageProps {
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
+  const isSystem = message.role === 'system';
   const isError = message.isError;
+
+  // System messages (robot feedback) have a distinct centered style
+  if (isSystem) {
+    return (
+      <div className="flex justify-center my-2">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 border border-slate-600/50 rounded-full text-xs text-slate-400">
+          <Radio className="w-3 h-3 text-green-400 animate-pulse" />
+          <span>{message.content}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>

@@ -1,13 +1,15 @@
 /**
  * Claude API Integration for RoboSim
  * Provides real LLM-powered robot control and code generation
+ * Enhanced with semantic state for natural language understanding
  */
 
-import type { JointState, ActiveRobotType, WheeledRobotState, DroneState, HumanoidState } from '../types';
+import type { JointState, ActiveRobotType, WheeledRobotState, DroneState, HumanoidState, SensorReading } from '../types';
 import { SYSTEM_PROMPTS } from '../hooks/useLLMChat';
+import { generateSemanticState } from './semanticState';
 
 export interface ClaudeResponse {
-  action: 'move' | 'sequence' | 'code' | 'explain' | 'error';
+  action: 'move' | 'sequence' | 'code' | 'explain' | 'query' | 'error';
   description: string;
   code?: string;
   joints?: Partial<JointState> | Array<Partial<JointState>>;
@@ -15,42 +17,92 @@ export interface ClaudeResponse {
   droneAction?: Partial<DroneState>;
   humanoidAction?: Partial<HumanoidState>;
   duration?: number;
+  // New: allow LLM to ask clarifying questions
+  clarifyingQuestion?: string;
 }
 
 const CLAUDE_RESPONSE_FORMAT = `
 Respond with a JSON object in this exact format:
 {
-  "action": "move" | "sequence" | "code" | "explain",
+  "action": "move" | "sequence" | "code" | "explain" | "query",
   "description": "Human-readable explanation of what you're doing",
   "code": "Optional: Arduino/JavaScript code for this action",
   "joints": { "base": 0, "shoulder": 0, "elbow": 0, "wrist": 0, "wristRoll": 0, "gripper": 50 },
-  "duration": 1000
+  "duration": 1000,
+  "clarifyingQuestion": "Optional: Ask user for more info if needed"
 }
 
 For arm robots, use joints. For wheeled robots, use wheeledAction with leftWheelSpeed, rightWheelSpeed.
 For drones, use droneAction with throttle, position, rotation, armed, flightMode.
 For humanoids, use humanoidAction with joint names like leftKnee, rightShoulderPitch, etc.
+
+IMPORTANT CAPABILITIES:
+- You can see the robot's CURRENT STATE including joint positions, sensor readings, and recent events
+- You can understand spatial relationships ("move to the left", "go higher", "closer to the object")
+- You can reference the robot's current position ("from here", "continue", "go back")
+- You can provide feedback about what you observe in the robot's state
+- If the user's request is unclear, use action="query" with clarifyingQuestion to ask for more details
 `;
 
-function buildSystemPrompt(robotType: ActiveRobotType, currentState: unknown): string {
+export interface FullRobotState {
+  joints: JointState;
+  wheeledRobot: WheeledRobotState;
+  drone: DroneState;
+  humanoid: HumanoidState;
+  sensors: SensorReading;
+  isAnimating: boolean;
+}
+
+function buildSystemPrompt(robotType: ActiveRobotType, fullState: FullRobotState): string {
   const basePrompt = SYSTEM_PROMPTS[robotType];
+
+  // Generate semantic state description
+  const semanticState = generateSemanticState(
+    robotType,
+    fullState.joints,
+    fullState.wheeledRobot,
+    fullState.drone,
+    fullState.humanoid,
+    fullState.sensors,
+    fullState.isAnimating
+  );
 
   return `${basePrompt}
 
-CURRENT STATE:
-${JSON.stringify(currentState, null, 2)}
+# CURRENT ROBOT STATE (Natural Language)
+${semanticState}
+
+# RAW STATE DATA (For precise control)
+${JSON.stringify(
+  robotType === 'arm' ? fullState.joints :
+  robotType === 'wheeled' ? fullState.wheeledRobot :
+  robotType === 'drone' ? fullState.drone :
+  fullState.humanoid,
+  null, 2
+)}
 
 ${CLAUDE_RESPONSE_FORMAT}
 
-Important: Always respond with valid JSON. Be concise but helpful.`;
+Important:
+- Always respond with valid JSON
+- Be concise but helpful
+- Reference the current state when relevant ("I see you're currently...", "From the current position...")
+- Acknowledge what just happened when continuing a task
+`;
 }
 
 export async function callClaudeAPI(
   message: string,
   robotType: ActiveRobotType,
-  currentState: JointState | WheeledRobotState | DroneState | HumanoidState,
+  fullState: FullRobotState,
   apiKey?: string
 ): Promise<ClaudeResponse> {
+  // Get current state based on robot type for demo mode
+  const currentState = robotType === 'arm' ? fullState.joints :
+                       robotType === 'wheeled' ? fullState.wheeledRobot :
+                       robotType === 'drone' ? fullState.drone :
+                       fullState.humanoid;
+
   // If no API key, use the demo mode with simulated responses
   if (!apiKey) {
     return simulateClaudeResponse(message, robotType, currentState);
@@ -68,7 +120,7 @@ export async function callClaudeAPI(
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
-        system: buildSystemPrompt(robotType, currentState),
+        system: buildSystemPrompt(robotType, fullState),
         messages: [
           {
             role: 'user',
