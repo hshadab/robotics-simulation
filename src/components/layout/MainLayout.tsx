@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { SimulationViewport } from '../simulation';
 import { ChatPanel } from '../chat';
 import { JointControls, ShareButton, ConsolidatedToolsPanel } from '../controls';
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';
 import { ApiKeySettings } from '../settings/ApiKeySettings';
+import { FirstRunModal, useFirstRun } from '../onboarding/FirstRunModal';
 import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, Brain, Database, Mic, Eye, Box, Sparkles, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button, Select } from '../common';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -15,6 +16,7 @@ type Tab = 'simulate' | 'code' | 'learn' | 'docs';
 export const MainLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('simulate');
   const [showSettings, setShowSettings] = useState(false);
+  const [triggerTutorial, setTriggerTutorial] = useState(false);
   const { user, logout } = useAuthStore();
   const {
     selectedRobotId,
@@ -24,6 +26,19 @@ export const MainLayout: React.FC = () => {
     setSimulationStatus,
     isAnimating,
   } = useAppStore();
+  const { showModal, markComplete } = useFirstRun();
+
+  const handleStartTutorial = useCallback(() => {
+    markComplete();
+    setActiveTab('simulate');
+    // Trigger tutorial opening in SimulateTab
+    setTriggerTutorial(true);
+    setTimeout(() => setTriggerTutorial(false), 100);
+  }, [markComplete]);
+
+  const handleSkipOnboarding = useCallback(() => {
+    markComplete();
+  }, [markComplete]);
 
   const tabs = [
     { id: 'simulate' as const, label: 'Simulate', icon: <Gamepad2 className="w-4 h-4" /> },
@@ -141,7 +156,7 @@ export const MainLayout: React.FC = () => {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'simulate' && <SimulateTab />}
+        {activeTab === 'simulate' && <SimulateTab openTutorial={triggerTutorial} />}
         {activeTab === 'code' && <CodeTab />}
         {activeTab === 'learn' && <LearnTab />}
         {activeTab === 'docs' && <DocsTab />}
@@ -149,13 +164,34 @@ export const MainLayout: React.FC = () => {
 
       {/* Settings Modal */}
       <ApiKeySettings isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      {/* First Run Onboarding Modal */}
+      {showModal && (
+        <FirstRunModal
+          onStartTutorial={handleStartTutorial}
+          onSkip={handleSkipOnboarding}
+        />
+      )}
     </div>
   );
 };
 
-const SimulateTab: React.FC = () => {
+interface SimulateTabProps {
+  openTutorial?: boolean;
+}
+
+const SimulateTab: React.FC<SimulateTabProps> = ({ openTutorial }) => {
   const { setControlMode, setShowWorkspace } = useAppStore();
   const [showToolsPanel, setShowToolsPanel] = useState(true);
+
+  // When openTutorial triggers, we could emit an event or set a global state
+  // For now, the TutorialPanel in ConsolidatedToolsPanel will handle its own visibility
+  React.useEffect(() => {
+    if (openTutorial) {
+      // Ensure tools panel is visible when tutorial is triggered
+      setShowToolsPanel(true);
+    }
+  }, [openTutorial]);
 
   return (
     <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>

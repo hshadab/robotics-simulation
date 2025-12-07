@@ -644,6 +644,37 @@ MIT License - see LICENSE file for details.
 - [Zustand](https://github.com/pmndrs/zustand)
 - Berkeley Humanoid Lite design inspiration
 
+## Development Roadmap
+
+RoboSim aims to be the fastest path from zero to trained robot policy. The following features are planned to address key pain points in robotics education and data collection.
+
+### Phase 1: Onboarding Improvements (Quick Wins)
+- [x] **First-run tutorial modal** - Detect new users and prompt interactive onboarding
+- [x] **Batch episode recording** - "Record N episodes" button for efficient data collection
+- [x] **Trajectory noise augmentation** - Add configurable noise to recorded episodes for diversity
+
+### Phase 2: Data Generation Tools (Medium Effort)
+- [ ] **Parameterized task templates** - Configurable waypoints with randomizable parameters
+- [ ] **Visual randomization UI** - Lighting, texture, and color variation controls
+- [ ] **Dataset augmentation panel** - Multiply episodes with automated variations
+
+### Phase 3: Advanced Features (Major)
+- [ ] **Auto-episode generator** - One-click synthetic data generation (100+ episodes)
+- [ ] **Guided challenge system** - Interactive tutorials with position validation
+- [ ] **Direct HuggingFace upload** - Integrated Hub publishing without CLI
+
+### Why These Features?
+
+Based on research into robotics simulation pain points:
+
+1. **Learning Curve**: Traditional tools like ROS/Gazebo require complex installation and version matching. RoboSim runs in any browser with zero setup.
+
+2. **Data Collection Cost**: Imitation learning requires 50-200+ demonstration episodes, taking days of manual teleoperation. Automated generation can reduce this to minutes.
+
+3. **Sim-to-Real Transfer**: Domain randomization (visual, sensor, trajectory) is essential for policies that work on real hardware.
+
+See [ROADMAP.md](./ROADMAP.md) for detailed implementation plans.
+
 ## Resources
 
 - [SO-101 Official Repository](https://github.com/TheRobotStudio/SO-ARM100)

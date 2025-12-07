@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Circle,
   Download,
@@ -11,12 +11,17 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Layers,
+  Play,
+  Square,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '../common';
 import { useAppStore } from '../../stores/useAppStore';
 import { DatasetRecorder as Recorder, downloadDataset, type Episode } from '../../lib/datasetExporter';
 import { exportLeRobotDataset, validateForLeRobot } from '../../lib/lerobotExporter';
 import { CanvasVideoRecorder } from '../../lib/videoRecorder';
+import { augmentDataset, type AugmentationConfig } from '../../lib/trajectoryAugmentation';
 
 type ExportFormat = 'json' | 'lerobot';
 
@@ -37,10 +42,23 @@ export const DatasetRecorderPanel: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Batch recording state
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchTarget, setBatchTarget] = useState(10);
+  const [batchCurrent, setBatchCurrent] = useState(0);
+  const [batchPaused, setBatchPaused] = useState(false);
+  const [pauseBetweenEpisodes, setPauseBetweenEpisodes] = useState(2); // seconds
+
+  // Augmentation state
+  const [enableAugmentation, setEnableAugmentation] = useState(false);
+  const [augmentationMultiplier, setAugmentationMultiplier] = useState(5);
+  const [actionNoiseStd, setActionNoiseStd] = useState(2.0);
+
   // Refs
   const recorderRef = useRef<Recorder | null>(null);
   const videoRecorderRef = useRef<CanvasVideoRecorder | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const batchTimerRef = useRef<number | null>(null);
 
   // Get current state based on robot type
   const getCurrentState = () => {
@@ -109,7 +127,59 @@ export const DatasetRecorderPanel: React.FC = () => {
     }
 
     setIsRecording(false);
+
+    // If in batch mode and not paused, schedule next recording
+    if (batchMode && !batchPaused && batchCurrent < batchTarget - 1) {
+      setBatchCurrent((prev) => prev + 1);
+      batchTimerRef.current = window.setTimeout(() => {
+        startRecording();
+      }, pauseBetweenEpisodes * 1000);
+    } else if (batchMode && batchCurrent >= batchTarget - 1) {
+      // Batch complete
+      setBatchMode(false);
+      setBatchCurrent(0);
+    }
   };
+
+  // Start batch recording
+  const startBatchRecording = useCallback(() => {
+    setBatchMode(true);
+    setBatchCurrent(0);
+    setBatchPaused(false);
+    startRecording();
+  }, []);
+
+  // Pause/resume batch
+  const toggleBatchPause = useCallback(() => {
+    if (batchPaused) {
+      // Resume - start next episode
+      setBatchPaused(false);
+      if (!isRecording) {
+        startRecording();
+      }
+    } else {
+      // Pause - stop current recording and don't auto-start next
+      setBatchPaused(true);
+      if (batchTimerRef.current) {
+        clearTimeout(batchTimerRef.current);
+        batchTimerRef.current = null;
+      }
+    }
+  }, [batchPaused, isRecording]);
+
+  // Cancel batch recording
+  const cancelBatchRecording = useCallback(() => {
+    setBatchMode(false);
+    setBatchCurrent(0);
+    setBatchPaused(false);
+    if (batchTimerRef.current) {
+      clearTimeout(batchTimerRef.current);
+      batchTimerRef.current = null;
+    }
+    if (isRecording) {
+      stopRecording(false);
+    }
+  }, [isRecording]);
 
   const clearEpisodes = () => {
     setEpisodes([]);
@@ -122,8 +192,21 @@ export const DatasetRecorderPanel: React.FC = () => {
     setIsExporting(true);
 
     try {
+      // Apply augmentation if enabled
+      let episodesToExport = episodes;
+      if (enableAugmentation) {
+        const augConfig: Partial<AugmentationConfig> = {
+          actionNoiseStd,
+          numAugmentations: augmentationMultiplier,
+          timeStretchRange: [0.9, 1.1],
+          spatialJitter: 1.0,
+        };
+        episodesToExport = augmentDataset(episodes, augConfig);
+        console.log(`Augmented ${episodes.length} episodes to ${episodesToExport.length} episodes`);
+      }
+
       if (exportFormat === 'lerobot') {
-        // Validate first
+        // Validate first (use original episodes for validation)
         const validation = validateForLeRobot(episodes);
         if (!validation.valid) {
           console.error('Validation errors:', validation.errors);
@@ -134,16 +217,17 @@ export const DatasetRecorderPanel: React.FC = () => {
 
         // Export LeRobot format
         await exportLeRobotDataset(
-          episodes,
+          episodesToExport,
           datasetName,
           selectedRobotId,
           30, // fps
-          recordVideo ? videoBlobs : undefined
+          // Only include videos for original episodes when not augmenting
+          enableAugmentation ? undefined : (recordVideo ? videoBlobs : undefined)
         );
       } else {
         // Export JSON format
         const name = `${datasetName}_${Date.now()}`;
-        downloadDataset(episodes, name, 'json');
+        downloadDataset(episodesToExport, name, 'json');
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -161,6 +245,9 @@ export const DatasetRecorderPanel: React.FC = () => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (batchTimerRef.current) {
+        clearTimeout(batchTimerRef.current);
       }
     };
   }, []);
@@ -259,6 +346,111 @@ export const DatasetRecorderPanel: React.FC = () => {
             </button>
           </div>
 
+          {/* Batch Recording Settings */}
+          <div className="border-t border-slate-700/50 pt-3 mt-1">
+            <div className="flex items-center gap-2 mb-2">
+              <Layers className="w-3 h-3 text-purple-400" />
+              <span className="text-xs text-slate-300 font-medium">Batch Recording</span>
+            </div>
+
+            {/* Batch Target */}
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-xs text-slate-400 w-20">Episodes:</label>
+              <select
+                value={batchTarget}
+                onChange={(e) => setBatchTarget(Number(e.target.value))}
+                className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                disabled={batchMode}
+              >
+                <option value={5}>5 episodes</option>
+                <option value={10}>10 episodes</option>
+                <option value={25}>25 episodes</option>
+                <option value={50}>50 episodes</option>
+                <option value={100}>100 episodes</option>
+              </select>
+            </div>
+
+            {/* Pause Between Episodes */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-400 w-20">Pause:</label>
+              <select
+                value={pauseBetweenEpisodes}
+                onChange={(e) => setPauseBetweenEpisodes(Number(e.target.value))}
+                className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                disabled={batchMode}
+              >
+                <option value={1}>1 second</option>
+                <option value={2}>2 seconds</option>
+                <option value={3}>3 seconds</option>
+                <option value={5}>5 seconds</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Data Augmentation Settings */}
+          <div className="border-t border-slate-700/50 pt-3 mt-1">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-3 h-3 text-green-400" />
+                <span className="text-xs text-slate-300 font-medium">Data Augmentation</span>
+              </div>
+              <button
+                onClick={() => setEnableAugmentation(!enableAugmentation)}
+                className={`w-10 h-5 rounded-full transition-colors ${
+                  enableAugmentation ? 'bg-green-600' : 'bg-slate-600'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 bg-white rounded-full transition-transform ${
+                    enableAugmentation ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {enableAugmentation && (
+              <>
+                {/* Multiplier */}
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-xs text-slate-400 w-20">Multiplier:</label>
+                  <select
+                    value={augmentationMultiplier}
+                    onChange={(e) => setAugmentationMultiplier(Number(e.target.value))}
+                    className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                  >
+                    <option value={2}>2x (1 orig + 2 aug)</option>
+                    <option value={5}>5x (1 orig + 5 aug)</option>
+                    <option value={10}>10x (1 orig + 10 aug)</option>
+                    <option value={20}>20x (1 orig + 20 aug)</option>
+                  </select>
+                </div>
+
+                {/* Noise Level */}
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="text-xs text-slate-400 w-20">Noise:</label>
+                  <select
+                    value={actionNoiseStd}
+                    onChange={(e) => setActionNoiseStd(Number(e.target.value))}
+                    className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded text-white"
+                  >
+                    <option value={0.5}>Low (±0.5°)</option>
+                    <option value={1.0}>Medium-Low (±1°)</option>
+                    <option value={2.0}>Medium (±2°)</option>
+                    <option value={3.0}>Medium-High (±3°)</option>
+                    <option value={5.0}>High (±5°)</option>
+                  </select>
+                </div>
+
+                {/* Preview Stats */}
+                {episodes.length > 0 && (
+                  <div className="text-xs text-green-300 bg-green-900/20 px-2 py-1 rounded">
+                    {episodes.length} episodes → {episodes.length * (augmentationMultiplier + 1)} total
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {/* LeRobot Link */}
           {exportFormat === 'lerobot' && (
             <a
@@ -275,37 +467,120 @@ export const DatasetRecorderPanel: React.FC = () => {
       )}
 
       {/* Recording Controls */}
-      <div className="flex items-center gap-2 mb-3">
-        {!isRecording ? (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={startRecording}
-            leftIcon={<Circle className="w-3 h-3 fill-current" />}
-          >
-            Record
-          </Button>
-        ) : (
-          <>
+      <div className="flex flex-col gap-2 mb-3">
+        {/* Single Episode Recording */}
+        {!batchMode && (
+          <div className="flex items-center gap-2">
+            {!isRecording ? (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={startRecording}
+                  leftIcon={<Circle className="w-3 h-3 fill-current" />}
+                >
+                  Record
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={startBatchRecording}
+                  leftIcon={<Layers className="w-3 h-3" />}
+                  title={`Record ${batchTarget} episodes`}
+                >
+                  Batch ({batchTarget})
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => stopRecording(true)}
+                  leftIcon={<CheckCircle className="w-4 h-4" />}
+                >
+                  Success
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => stopRecording(false)}
+                  leftIcon={<XCircle className="w-4 h-4" />}
+                >
+                  Fail
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Batch Mode Controls */}
+        {batchMode && (
+          <div className="flex items-center gap-2">
+            {isRecording ? (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => stopRecording(true)}
+                  leftIcon={<CheckCircle className="w-4 h-4" />}
+                >
+                  Success
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => stopRecording(false)}
+                  leftIcon={<XCircle className="w-4 h-4" />}
+                >
+                  Fail
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant={batchPaused ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={toggleBatchPause}
+                  leftIcon={batchPaused ? <Play className="w-3 h-3" /> : <RefreshCw className="w-3 h-3" />}
+                >
+                  {batchPaused ? 'Resume' : 'Waiting...'}
+                </Button>
+              </>
+            )}
             <Button
-              variant="success"
+              variant="ghost"
               size="sm"
-              onClick={() => stopRecording(true)}
-              leftIcon={<CheckCircle className="w-4 h-4" />}
+              onClick={cancelBatchRecording}
+              leftIcon={<Square className="w-3 h-3" />}
             >
-              Success
+              Cancel
             </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => stopRecording(false)}
-              leftIcon={<XCircle className="w-4 h-4" />}
-            >
-              Fail
-            </Button>
-          </>
+          </div>
         )}
       </div>
+
+      {/* Batch Progress */}
+      {batchMode && (
+        <div className="mb-3 p-2 bg-purple-900/30 border border-purple-700/50 rounded-lg">
+          <div className="flex items-center justify-between text-sm text-purple-300 mb-1">
+            <span className="flex items-center gap-1">
+              <Layers className="w-3 h-3" />
+              Batch Recording
+            </span>
+            <span>{batchCurrent + 1} / {batchTarget}</span>
+          </div>
+          <div className="w-full bg-slate-700 rounded-full h-1.5">
+            <div
+              className="bg-purple-500 h-1.5 rounded-full transition-all"
+              style={{ width: `${((batchCurrent + (isRecording ? 0.5 : 0)) / batchTarget) * 100}%` }}
+            />
+          </div>
+          {batchPaused && !isRecording && (
+            <div className="text-xs text-yellow-400 mt-1">Paused - Click Resume to continue</div>
+          )}
+        </div>
+      )}
 
       {/* Recording Status */}
       {isRecording && (
