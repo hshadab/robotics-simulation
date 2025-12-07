@@ -1,14 +1,16 @@
 /**
  * SO-101 Robot Arm 3D Model
  * Uses urdf-loader library for proper URDF parsing and STL loading
+ * Includes physics colliders for all arm segments
  */
 
 import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import URDFLoader from 'urdf-loader';
-import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { RigidBody, CuboidCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
 import type { JointState } from '../../types';
+import { SO101_DIMS, calculateJointPositions } from './SO101Kinematics';
 
 interface SO101ArmProps {
   joints: JointState;
@@ -43,6 +45,145 @@ const SERVO_MATERIAL = new THREE.MeshStandardMaterial({
   metalness: 0.2,
   roughness: 0.3,
 });
+
+/**
+ * Physics colliders that follow the arm's kinematic chain
+ * These are kinematic bodies that update position based on joint angles
+ */
+const ArmPhysicsColliders: React.FC<{ joints: JointState }> = ({ joints }) => {
+  const upperArmRef = useRef<RapierRigidBody>(null);
+  const forearmRef = useRef<RapierRigidBody>(null);
+  const wristRef = useRef<RapierRigidBody>(null);
+  const gripperRef = useRef<RapierRigidBody>(null);
+
+  useFrame(() => {
+    const positions = calculateJointPositions(joints);
+
+    // Convert degrees to radians for rotation calculations
+    const shoulderPanRad = (joints.base * Math.PI) / 180;
+    const shoulderLiftRad = (joints.shoulder * Math.PI) / 180;
+    const elbowFlexRad = (joints.elbow * Math.PI) / 180;
+    const wristFlexRad = (joints.wrist * Math.PI) / 180;
+
+    // Upper arm: between shoulder and elbow
+    if (upperArmRef.current) {
+      const midPoint = {
+        x: (positions.shoulder[0] + positions.elbow[0]) / 2,
+        y: (positions.shoulder[1] + positions.elbow[1]) / 2,
+        z: (positions.shoulder[2] + positions.elbow[2]) / 2,
+      };
+      upperArmRef.current.setNextKinematicTranslation(midPoint);
+
+      // Calculate rotation quaternion for upper arm
+      const q = new THREE.Quaternion();
+      q.setFromEuler(new THREE.Euler(
+        0,
+        -shoulderPanRad,
+        -shoulderLiftRad,
+        'YXZ'
+      ));
+      upperArmRef.current.setNextKinematicRotation({ x: q.x, y: q.y, z: q.z, w: q.w });
+    }
+
+    // Forearm: between elbow and wrist
+    if (forearmRef.current) {
+      const midPoint = {
+        x: (positions.elbow[0] + positions.wrist[0]) / 2,
+        y: (positions.elbow[1] + positions.wrist[1]) / 2,
+        z: (positions.elbow[2] + positions.wrist[2]) / 2,
+      };
+      forearmRef.current.setNextKinematicTranslation(midPoint);
+
+      const q = new THREE.Quaternion();
+      q.setFromEuler(new THREE.Euler(
+        0,
+        -shoulderPanRad,
+        -(shoulderLiftRad + elbowFlexRad),
+        'YXZ'
+      ));
+      forearmRef.current.setNextKinematicRotation({ x: q.x, y: q.y, z: q.z, w: q.w });
+    }
+
+    // Wrist: between wrist joint and gripper
+    if (wristRef.current) {
+      const midPoint = {
+        x: (positions.wrist[0] + positions.gripper[0]) / 2,
+        y: (positions.wrist[1] + positions.gripper[1]) / 2,
+        z: (positions.wrist[2] + positions.gripper[2]) / 2,
+      };
+      wristRef.current.setNextKinematicTranslation(midPoint);
+
+      const q = new THREE.Quaternion();
+      q.setFromEuler(new THREE.Euler(
+        0,
+        -shoulderPanRad,
+        -(shoulderLiftRad + elbowFlexRad + wristFlexRad),
+        'YXZ'
+      ));
+      wristRef.current.setNextKinematicRotation({ x: q.x, y: q.y, z: q.z, w: q.w });
+    }
+
+    // Gripper: at the end effector
+    if (gripperRef.current) {
+      gripperRef.current.setNextKinematicTranslation({
+        x: positions.gripper[0],
+        y: positions.gripper[1],
+        z: positions.gripper[2],
+      });
+
+      const q = new THREE.Quaternion();
+      q.setFromEuler(new THREE.Euler(
+        0,
+        -shoulderPanRad,
+        -(shoulderLiftRad + elbowFlexRad + wristFlexRad),
+        'YXZ'
+      ));
+      gripperRef.current.setNextKinematicRotation({ x: q.x, y: q.y, z: q.z, w: q.w });
+    }
+  });
+
+  const dims = SO101_DIMS;
+
+  return (
+    <>
+      {/* Upper arm collider */}
+      <RigidBody
+        ref={upperArmRef}
+        type="kinematicPosition"
+        colliders={false}
+      >
+        <CuboidCollider args={[0.025, dims.link3Length / 2, 0.025]} />
+      </RigidBody>
+
+      {/* Forearm collider */}
+      <RigidBody
+        ref={forearmRef}
+        type="kinematicPosition"
+        colliders={false}
+      >
+        <CuboidCollider args={[0.02, dims.link4Length / 2, 0.02]} />
+      </RigidBody>
+
+      {/* Wrist collider */}
+      <RigidBody
+        ref={wristRef}
+        type="kinematicPosition"
+        colliders={false}
+      >
+        <CuboidCollider args={[0.015, (dims.link5Length + dims.gripperLength) / 2, 0.015]} />
+      </RigidBody>
+
+      {/* Gripper collider */}
+      <RigidBody
+        ref={gripperRef}
+        type="kinematicPosition"
+        colliders={false}
+      >
+        <CuboidCollider args={[0.03, 0.02, 0.02]} />
+      </RigidBody>
+    </>
+  );
+};
 
 const URDFRobot: React.FC<SO101ArmProps> = ({ joints }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -137,10 +278,17 @@ const URDFRobot: React.FC<SO101ArmProps> = ({ joints }) => {
 
   return (
     <group ref={groupRef}>
+      {/* Fixed base with collider */}
       <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={[0.06, 0.04, 0.06]} position={[0, 0.04, 0]} />
-        {robot && <primitive object={robot} />}
+        <CylinderCollider args={[SO101_DIMS.baseHeight / 2, SO101_DIMS.baseRadius]} position={[0, SO101_DIMS.baseHeight / 2, 0]} />
+        <CuboidCollider args={[0.04, SO101_DIMS.link1Height / 2, 0.04]} position={[0, SO101_DIMS.baseHeight + SO101_DIMS.link1Height / 2, 0]} />
       </RigidBody>
+
+      {/* Visual URDF model */}
+      {robot && <primitive object={robot} />}
+
+      {/* Kinematic physics colliders for arm segments */}
+      <ArmPhysicsColliders joints={joints} />
     </group>
   );
 };

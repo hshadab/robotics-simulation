@@ -161,11 +161,11 @@ export const TargetZonePhysics: React.FC<TargetZonePhysicsProps> = ({ zone }) =>
   );
 };
 
-// Floor collider
+// Floor collider - large enough to catch falling objects
 export const FloorCollider: React.FC = () => {
   return (
-    <RigidBody type="fixed" position={[0, -0.005, 0]}>
-      <CuboidCollider args={[1, 0.01, 1]} />
+    <RigidBody type="fixed" position={[0, -0.01, 0]} friction={0.8} restitution={0.1}>
+      <CuboidCollider args={[2, 0.02, 2]} />
     </RigidBody>
   );
 };
