@@ -155,6 +155,17 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 - **Preset Objects** - Quick generation of common items
 - **Scene Generation** - Create multiple objects from descriptions
 
+### Image-to-3D Object Generation (NEW)
+- **Photo to 3D Model** - Upload real object photos and convert to training-ready 3D models
+- **CSM API Integration** - Powered by Common Sense Machines (CSM.ai) image-to-3D API
+- **Automatic Grasp Point Estimation** - AI estimates optimal grasp points from object geometry
+- **Physics Configuration** - Auto-calculated mass, friction, and collision shapes
+- **Quality Options** - Base (fast), Turbo, or Highest quality generation
+- **Real-World Dimensions** - Specify actual object size in meters
+- **Download & Use** - Download GLB file or add directly to scene
+- **Training Pipeline** - Generates parameterized task templates for the object
+- **Free Tier** - CSM.ai offers 10 free API credits to get started
+
 ### Code Editor
 - Built-in JavaScript code editor with Monaco
 - Robot API for programmatic control
@@ -544,6 +555,7 @@ src/
 │   │   ├── VoiceControlPanel.tsx      # Voice command interface
 │   │   ├── VisionAnalysisPanel.tsx    # Scene understanding with AI
 │   │   ├── TextTo3DPanel.tsx          # Text-to-3D object generation
+│   │   ├── ImageTo3DPanel.tsx         # Image-to-3D with CSM API
 │   │   ├── JointTrajectoryGraph.tsx   # Real-time plotting
 │   │   ├── SerialConnectionPanel.tsx  # Hardware connection
 │   │   └── ...
@@ -568,6 +580,8 @@ src/
 │   ├── visionLanguage.ts      # Vision-language scene analysis
 │   ├── codeCopilot.ts         # AI code completion and generation
 │   ├── textTo3D.ts            # Text-to-3D model generation
+│   ├── csmImageTo3D.ts        # CSM API for image-to-3D conversion
+│   ├── objectTaskGenerator.ts # Auto-generate task templates for objects
 │   ├── logger.ts              # Structured logging utility
 │   ├── huggingfaceHub.ts      # HuggingFace Hub API integration
 │   ├── policyRunner.ts        # ONNX Runtime policy execution

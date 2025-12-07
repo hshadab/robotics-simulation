@@ -23,6 +23,7 @@ import {
   Upload,
   Layers,
   Palette,
+  Camera,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore';
 
@@ -49,7 +50,7 @@ const RobotArmSVG: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 // Feature tabs configuration
-type FeatureTab = 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'autogen' | 'challenges' | 'augment';
+type FeatureTab = 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'image3d' | 'autogen' | 'challenges' | 'augment';
 
 const FEATURE_TABS: Array<{
   id: FeatureTab;
@@ -240,6 +241,26 @@ const FEATURE_TABS: Array<{
       'Object appears in the scene',
     ],
     color: 'emerald',
+  },
+  {
+    id: 'image3d',
+    label: 'Image to 3D',
+    icon: <Camera className="w-5 h-5" />,
+    title: 'Photo to Training-Ready 3D Model',
+    description: 'Upload a photo of any real object and convert it to a physics-ready 3D model with auto-estimated grasp points.',
+    benefits: [
+      'Upload any object photo',
+      'CSM API generates accurate 3D mesh',
+      'Auto-estimated grasp points for manipulation',
+      'Generates training task templates automatically',
+    ],
+    howTo: [
+      'Open the AI tab → Image to 3D panel',
+      'Enter your CSM API key (free at csm.ai)',
+      'Upload a photo and set real dimensions',
+      'Generate model and add to scene for training',
+    ],
+    color: 'cyan',
   },
   {
     id: 'autogen',
@@ -467,13 +488,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
 
       {/* Key Features Highlight */}
       <section className="relative px-8 py-12 max-w-7xl mx-auto">
-        <div className="grid grid-cols-5 gap-4 mb-4">
+        <div className="grid grid-cols-6 gap-4 mb-4">
           {[
             { icon: <MessageSquare className="w-6 h-6" />, label: 'Chat Control', desc: 'Natural language', color: 'blue' },
             { icon: <Mic className="w-6 h-6" />, label: 'Voice Control', desc: 'Hands-free', color: 'cyan' },
             { icon: <Eye className="w-6 h-6" />, label: 'Vision AI', desc: 'Scene understanding', color: 'pink' },
             { icon: <Code className="w-6 h-6" />, label: 'Code Copilot', desc: 'AI autocomplete', color: 'yellow' },
             { icon: <Box className="w-6 h-6" />, label: 'Text to 3D', desc: 'Generate objects', color: 'emerald' },
+            { icon: <Camera className="w-6 h-6" />, label: 'Image to 3D', desc: 'Photo → 3D model', color: 'teal' },
           ].map((item) => (
             <div
               key={item.label}
@@ -654,10 +676,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
                 <li className="hover:text-white cursor-pointer">AI Chat Control</li>
                 <li className="hover:text-white cursor-pointer">Voice Control</li>
                 <li className="hover:text-white cursor-pointer">Vision-Language AI</li>
+                <li className="hover:text-white cursor-pointer">Image to 3D (CSM)</li>
                 <li className="hover:text-white cursor-pointer">Auto-Episode Generator</li>
                 <li className="hover:text-white cursor-pointer">Guided Challenges</li>
                 <li className="hover:text-white cursor-pointer">HuggingFace Upload</li>
-                <li className="hover:text-white cursor-pointer">Domain Randomization</li>
                 <li className="hover:text-white cursor-pointer">Dataset Augmentation</li>
               </ul>
             </div>
@@ -684,6 +706,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
                 <li className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full" />
                   ONNX Runtime
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full" />
+                  CSM.ai (Image to 3D)
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-500 rounded-full" />
