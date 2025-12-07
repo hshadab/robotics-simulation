@@ -654,9 +654,9 @@ RoboSim aims to be the fastest path from zero to trained robot policy. The follo
 - [x] **Trajectory noise augmentation** - Add configurable noise to recorded episodes for diversity
 
 ### Phase 2: Data Generation Tools (Medium Effort)
-- [ ] **Parameterized task templates** - Configurable waypoints with randomizable parameters
-- [ ] **Visual randomization UI** - Lighting, texture, and color variation controls
-- [ ] **Dataset augmentation panel** - Multiply episodes with automated variations
+- [x] **Parameterized task templates** - Configurable waypoints with randomizable parameters
+- [x] **Visual randomization UI** - Lighting, texture, and color variation controls
+- [x] **Dataset augmentation panel** - Multiply episodes with automated variations
 
 ### Phase 3: Advanced Features (Major)
 - [ ] **Auto-episode generator** - One-click synthetic data generation (100+ episodes)

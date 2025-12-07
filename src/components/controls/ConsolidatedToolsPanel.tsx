@@ -28,6 +28,7 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
+  Layers,
 } from 'lucide-react';
 
 // Import all panel components
@@ -37,6 +38,9 @@ import { EnvironmentSelector } from './EnvironmentSelector';
 import { AdvancedControlsPanel } from './AdvancedControlsPanel';
 import { NumericalIKPanel } from './NumericalIKPanel';
 import { TaskTemplatesPanel } from './TaskTemplatesPanel';
+import { ParameterizedTaskPanel } from './ParameterizedTaskPanel';
+import { VisualRandomizationPanel } from './VisualRandomizationPanel';
+import { DatasetAugmentationPanel } from './DatasetAugmentationPanel';
 import { JointTrajectoryGraph } from './JointTrajectoryGraph';
 import { PolicyBrowserPanel } from './PolicyBrowserPanel';
 import { VoiceControlPanel } from './VoiceControlPanel';
@@ -203,6 +207,11 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
               <TaskTemplatesPanel />
             </CollapsibleSection>
 
+            {/* Parameterized Tasks */}
+            <CollapsibleSection title="Parameterized Tasks" icon={<Sliders className="w-4 h-4" />} badge="NEW">
+              <ParameterizedTaskPanel />
+            </CollapsibleSection>
+
             {/* Trajectory Graph */}
             <CollapsibleSection title="Trajectory" icon={<BarChart3 className="w-4 h-4" />}>
               <JointTrajectoryGraph height={120} />
@@ -265,6 +274,11 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
             {/* Dataset Stats */}
             <DatasetStatsPanel episodes={mockEpisodes} robotType="so-101" />
 
+            {/* Dataset Augmentation */}
+            <CollapsibleSection title="Augmentation" icon={<Layers className="w-4 h-4" />} badge="NEW">
+              <DatasetAugmentationPanel episodes={mockEpisodes} />
+            </CollapsibleSection>
+
             {/* Dataset Browser */}
             <CollapsibleSection
               title="Browse Datasets"
@@ -323,6 +337,11 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
             {/* Sensor Realism */}
             <CollapsibleSection title="Sensor Realism" icon={<Radio className="w-4 h-4" />}>
               <SensorRealismPanel />
+            </CollapsibleSection>
+
+            {/* Visual Randomization */}
+            <CollapsibleSection title="Visual Randomization" icon={<Sparkles className="w-4 h-4" />} badge="NEW">
+              <VisualRandomizationPanel />
             </CollapsibleSection>
 
             {/* Robot Vision */}
