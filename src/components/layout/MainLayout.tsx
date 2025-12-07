@@ -4,7 +4,7 @@ import { ChatPanel } from '../chat';
 import { JointControls, PresetButtons, EnvironmentSelector, ChallengePanel, DatasetRecorderPanel, DatasetPlayerPanel, HandTrackingPanel, ShareButton, AdvancedControlsPanel, TaskTemplatesPanel, JointTrajectoryGraph, SerialConnectionPanel, PolicyBrowserPanel, SensorRealismPanel, VisionPanel, SaveLoadPanel, MultiRobotPanel, NumericalIKPanel, AIEnvironmentPanel, VoiceControlPanel, VisionAnalysisPanel, TextTo3DPanel } from '../controls';
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';
 import { ApiKeySettings } from '../settings/ApiKeySettings';
-import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, ChevronDown, ChevronRight, Sliders, Brain, Database, Cpu, Activity, Hand, BarChart3, ListChecks, Wifi, Radio, Camera, HardDrive, Users, Crosshair, Sparkles, Mic, Eye, Box } from 'lucide-react';
+import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, ChevronDown, ChevronRight, Sliders, Brain, Database, Cpu, Activity, Hand, BarChart3, ListChecks, Wifi, Radio, Camera, HardDrive, Users, Crosshair, Sparkles, Mic, Eye, Box, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button, Select } from '../common';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAppStore } from '../../stores/useAppStore';
@@ -44,7 +44,7 @@ const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({ title, icon, childr
   );
 };
 
-type Tab = 'simulate' | 'code' | 'learn';
+type Tab = 'simulate' | 'code' | 'learn' | 'docs';
 
 export const MainLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('simulate');
@@ -63,6 +63,7 @@ export const MainLayout: React.FC = () => {
     { id: 'simulate' as const, label: 'Simulate', icon: <Gamepad2 className="w-4 h-4" /> },
     { id: 'code' as const, label: 'Code', icon: <Code className="w-4 h-4" /> },
     { id: 'learn' as const, label: 'Learn', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'docs' as const, label: 'Docs', icon: <FileText className="w-4 h-4" /> },
   ];
 
   const robotOptions = ROBOT_PROFILES.map((robot) => ({
@@ -177,6 +178,7 @@ export const MainLayout: React.FC = () => {
         {activeTab === 'simulate' && <SimulateTab />}
         {activeTab === 'code' && <CodeTab />}
         {activeTab === 'learn' && <LearnTab />}
+        {activeTab === 'docs' && <DocsTab />}
       </div>
 
       {/* Settings Modal */}
@@ -460,6 +462,297 @@ const LearnTab: React.FC = () => {
         <p className="text-slate-600 text-base mt-10 text-center">
           More tutorials coming soon
         </p>
+      </div>
+    </div>
+  );
+};
+
+const DocsTab: React.FC = () => {
+  const robots = [
+    {
+      id: 'so101',
+      name: 'SO-101 Robot Arm',
+      manufacturer: 'The Robot Company',
+      status: 'available',
+      description: '6-DOF articulated robot arm with gripper. Perfect for pick and place, assembly, and learning robotics.',
+      specs: [
+        { label: 'Degrees of Freedom', value: '6 (+ gripper)' },
+        { label: 'Reach', value: '~300mm' },
+        { label: 'Payload', value: '~100g' },
+        { label: 'Control', value: 'Position, Velocity' },
+        { label: 'Interface', value: 'Serial, LeRobot' },
+      ],
+      features: [
+        'Inverse Kinematics (click-to-move)',
+        'Keyboard & Gamepad teleoperation',
+        'Hand tracking control',
+        'AI Chat programming',
+        'LeRobot policy loading',
+        'Hardware export (Arduino, Python)',
+      ],
+    },
+    {
+      id: 'wheeled',
+      name: 'Wheeled Robot',
+      manufacturer: 'Generic',
+      status: 'coming_soon',
+      description: 'Differential drive mobile robot with sensors. Great for navigation, line following, and obstacle avoidance.',
+      specs: [
+        { label: 'Drive Type', value: 'Differential (2WD)' },
+        { label: 'Sensors', value: 'Ultrasonic, IR' },
+        { label: 'Speed', value: 'Variable' },
+        { label: 'Control', value: 'Velocity' },
+      ],
+      features: [
+        'Line following',
+        'Obstacle avoidance',
+        'Waypoint navigation',
+        'Sensor simulation',
+      ],
+    },
+    {
+      id: 'drone',
+      name: 'Quadcopter Drone',
+      manufacturer: 'Generic',
+      status: 'coming_soon',
+      description: 'Simulated quadcopter for learning drone programming and autonomous flight.',
+      specs: [
+        { label: 'Type', value: 'Quadcopter' },
+        { label: 'Control', value: 'Attitude, Position' },
+        { label: 'Sensors', value: 'IMU, Altimeter' },
+        { label: 'Modes', value: 'Manual, Auto' },
+      ],
+      features: [
+        'Takeoff/Landing',
+        'Waypoint missions',
+        'Altitude hold',
+        'Position control',
+      ],
+    },
+    {
+      id: 'humanoid',
+      name: 'Humanoid Robot',
+      manufacturer: 'Generic',
+      status: 'coming_soon',
+      description: 'Bipedal humanoid robot for advanced robotics research and education.',
+      specs: [
+        { label: 'Degrees of Freedom', value: '22+' },
+        { label: 'Height', value: '~50cm' },
+        { label: 'Control', value: 'Joint, Walking' },
+        { label: 'Balance', value: 'Simulated' },
+      ],
+      features: [
+        'Walking gaits',
+        'Gesture control',
+        'Balance control',
+        'Full body IK',
+      ],
+    },
+  ];
+
+  const aiFeatures = [
+    {
+      name: 'AI Chat Control',
+      description: 'Natural language robot control with Claude AI',
+      status: 'available',
+      icon: <Brain className="w-5 h-5" />,
+    },
+    {
+      name: 'Voice Control',
+      description: 'Hands-free control with Web Speech API',
+      status: 'available',
+      icon: <Mic className="w-5 h-5" />,
+    },
+    {
+      name: 'Vision-Language AI',
+      description: 'Scene understanding and object detection',
+      status: 'available',
+      icon: <Eye className="w-5 h-5" />,
+    },
+    {
+      name: 'Code Copilot',
+      description: 'AI-powered code completion and generation',
+      status: 'available',
+      icon: <Code className="w-5 h-5" />,
+    },
+    {
+      name: 'Text to 3D',
+      description: 'Generate 3D objects from text descriptions',
+      status: 'available',
+      icon: <Box className="w-5 h-5" />,
+    },
+    {
+      name: 'AI Environment',
+      description: 'Generate backgrounds and textures with Gemini',
+      status: 'available',
+      icon: <Sparkles className="w-5 h-5" />,
+    },
+    {
+      name: 'LeRobot Policies',
+      description: 'Load trained policies from HuggingFace Hub',
+      status: 'available',
+      icon: <Database className="w-5 h-5" />,
+    },
+  ];
+
+  return (
+    <div className="flex-1 p-8 overflow-auto" style={{ height: 'calc(100vh - 48px)' }}>
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-bold text-white mb-3">Documentation</h1>
+        <p className="text-lg text-slate-400 mb-10">
+          Complete reference for all robots, features, and APIs in RoboSim
+        </p>
+
+        {/* Robots Section */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <Bot className="w-6 h-6 text-blue-400" />
+            Supported Robots
+          </h2>
+
+          <div className="grid gap-6">
+            {robots.map((robot) => (
+              <div
+                key={robot.id}
+                className={`bg-slate-800/50 rounded-xl border transition ${
+                  robot.status === 'available'
+                    ? 'border-green-500/30 hover:border-green-500/50'
+                    : 'border-slate-700/50 opacity-75'
+                }`}
+              >
+                {/* Header */}
+                <div className="p-6 border-b border-slate-700/50">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-white">{robot.name}</h3>
+                        {robot.status === 'available' ? (
+                          <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                            <CheckCircle className="w-3 h-3" />
+                            Available
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                            <Clock className="w-3 h-3" />
+                            Coming Soon
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500">{robot.manufacturer}</p>
+                    </div>
+                  </div>
+                  <p className="text-slate-400 mt-3">{robot.description}</p>
+                </div>
+
+                {/* Specs & Features */}
+                <div className="p-6 grid md:grid-cols-2 gap-6">
+                  {/* Specifications */}
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-3">
+                      Specifications
+                    </h4>
+                    <div className="space-y-2">
+                      {robot.specs.map((spec, i) => (
+                        <div key={i} className="flex justify-between text-sm">
+                          <span className="text-slate-500">{spec.label}</span>
+                          <span className="text-white font-medium">{spec.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-3">
+                      Features
+                    </h4>
+                    <ul className="space-y-1">
+                      {robot.features.map((feature, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-slate-400">
+                          <CheckCircle className={`w-3 h-3 ${robot.status === 'available' ? 'text-green-400' : 'text-slate-600'}`} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Coming Soon Notice */}
+                {robot.status === 'coming_soon' && (
+                  <div className="px-6 pb-6">
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                      <p className="text-sm text-amber-300">
+                        This robot is currently in development. Basic simulation is available, but full feature support is coming soon.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* AI Features Section */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <Sparkles className="w-6 h-6 text-purple-400" />
+            AI Features
+          </h2>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiFeatures.map((feature) => (
+              <div
+                key={feature.name}
+                className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 hover:border-purple-500/30 transition"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg">
+                    {feature.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium">{feature.name}</h3>
+                    <span className="text-xs text-green-400">Available</span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-400">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Quick Links */}
+        <section>
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <FileText className="w-6 h-6 text-cyan-400" />
+            Resources
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <a
+              href="https://github.com/hshadab/robotics-simulation"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 hover:border-cyan-500/30 transition block"
+            >
+              <h3 className="text-white font-medium mb-2">GitHub Repository</h3>
+              <p className="text-sm text-slate-400">Source code, issues, and contributions</p>
+            </a>
+            <a
+              href="https://huggingface.co/lerobot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50 hover:border-cyan-500/30 transition block"
+            >
+              <h3 className="text-white font-medium mb-2">LeRobot Framework</h3>
+              <p className="text-sm text-slate-400">HuggingFace robot learning toolkit</p>
+            </a>
+            <div className="bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
+              <h3 className="text-white font-medium mb-2">API Reference</h3>
+              <p className="text-sm text-slate-400">Coming soon - Robot API documentation</p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
