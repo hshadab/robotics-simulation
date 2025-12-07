@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
   Bot, ArrowLeft, Gamepad2, Mic, Eye, Hand, Brain, Code, Download,
-  Keyboard, Mouse, Settings, Play, Save, Database, Box, Cpu, ChevronDown,
-  ChevronRight, Layers, Target, Video, Share2, HelpCircle, Monitor,
+  Keyboard, Mouse, Settings, Play, Save, Database, Box, ChevronDown,
+  ChevronRight, Layers, Target, Video, HelpCircle, Monitor,
   Zap, CheckCircle, Lightbulb, BookOpen, ArrowRight, Star
 } from 'lucide-react';
 

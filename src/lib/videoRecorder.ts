@@ -297,3 +297,173 @@ export function getGlobalVideoRecorder(): CanvasVideoRecorder {
 export function resetGlobalVideoRecorder(): void {
   globalRecorder = null;
 }
+
+/**
+ * Multi-camera recorder for LeRobot datasets
+ * Supports multiple camera views: high (overhead), wrist, side
+ */
+export type CameraView = 'cam_high' | 'cam_wrist' | 'cam_left' | 'cam_right';
+
+export interface MultiCameraConfig {
+  views: CameraView[];
+  fps: number;
+  resolution: { width: number; height: number };
+}
+
+export interface MultiCameraFrame {
+  timestamp: number;
+  images: Partial<Record<CameraView, string>>; // base64 encoded images
+}
+
+export class MultiCameraRecorder {
+  private config: MultiCameraConfig;
+  private recorders: Map<CameraView, CanvasVideoRecorder> = new Map();
+  private frames: MultiCameraFrame[] = [];
+  private isRecording = false;
+  private startTime = 0;
+
+  constructor(config: Partial<MultiCameraConfig> = {}) {
+    this.config = {
+      views: config.views || ['cam_high'],
+      fps: config.fps || 30,
+      resolution: config.resolution || { width: 640, height: 480 },
+    };
+  }
+
+  /**
+   * Initialize recorders for each camera view
+   */
+  initialize(): void {
+    for (const view of this.config.views) {
+      const recorder = new CanvasVideoRecorder({ fps: this.config.fps });
+      this.recorders.set(view, recorder);
+    }
+  }
+
+  /**
+   * Set canvas for a specific camera view
+   */
+  setCanvas(view: CameraView, canvas: HTMLCanvasElement): void {
+    const recorder = this.recorders.get(view);
+    if (recorder) {
+      recorder.setCanvas(canvas);
+    }
+  }
+
+  /**
+   * Auto-detect main canvas for cam_high (primary view)
+   */
+  autoDetectMainCanvas(): boolean {
+    const recorder = this.recorders.get('cam_high');
+    if (recorder) {
+      return recorder.findThreeCanvas() !== null;
+    }
+    return false;
+  }
+
+  /**
+   * Start recording all camera views
+   */
+  start(): boolean {
+    if (this.isRecording) return false;
+
+    this.frames = [];
+    this.startTime = Date.now();
+    this.isRecording = true;
+
+    // Start video recording for each view
+    for (const [view, recorder] of this.recorders) {
+      if (view === 'cam_high') {
+        // Main canvas - always record video
+        recorder.findThreeCanvas();
+        recorder.start();
+      }
+      // Other views will capture frames as they become available
+    }
+
+    return true;
+  }
+
+  /**
+   * Capture frame from all cameras
+   */
+  captureFrame(): MultiCameraFrame {
+    const timestamp = Date.now() - this.startTime;
+    const images: Partial<Record<CameraView, string>> = {};
+
+    for (const [view, recorder] of this.recorders) {
+      const frame = recorder.captureFrame();
+      if (frame) {
+        images[view] = frame;
+      }
+    }
+
+    const frameData: MultiCameraFrame = { timestamp, images };
+    this.frames.push(frameData);
+    return frameData;
+  }
+
+  /**
+   * Stop recording and return video blobs for each view
+   */
+  async stop(): Promise<Map<CameraView, Blob | null>> {
+    if (!this.isRecording) {
+      return new Map();
+    }
+
+    this.isRecording = false;
+    const videos = new Map<CameraView, Blob | null>();
+
+    for (const [view, recorder] of this.recorders) {
+      if (recorder.recording) {
+        const blob = await recorder.stop();
+        videos.set(view, blob);
+      } else {
+        videos.set(view, null);
+      }
+    }
+
+    return videos;
+  }
+
+  /**
+   * Get all captured frames
+   */
+  getFrames(): MultiCameraFrame[] {
+    return this.frames;
+  }
+
+  /**
+   * Get frame count
+   */
+  get frameCount(): number {
+    return this.frames.length;
+  }
+
+  /**
+   * Check if recording
+   */
+  get recording(): boolean {
+    return this.isRecording;
+  }
+
+  /**
+   * Get configured camera views
+   */
+  get views(): CameraView[] {
+    return this.config.views;
+  }
+}
+
+/**
+ * Create a multi-camera recorder with LeRobot-compatible defaults
+ */
+export function createLeRobotRecorder(views: CameraView[] = ['cam_high']): MultiCameraRecorder {
+  const recorder = new MultiCameraRecorder({
+    views,
+    fps: 30,
+    resolution: { width: 640, height: 480 },
+  });
+  recorder.initialize();
+  return recorder;
+}

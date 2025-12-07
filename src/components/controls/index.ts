@@ -22,3 +22,9 @@ export { AIEnvironmentPanel } from './AIEnvironmentPanel';
 export { VoiceControlPanel } from './VoiceControlPanel';
 export { VisionAnalysisPanel } from './VisionAnalysisPanel';
 export { TextTo3DPanel } from './TextTo3DPanel';
+// New Data Features
+export { DatasetBrowserPanel } from './DatasetBrowserPanel';
+export { DatasetStatsPanel } from './DatasetStatsPanel';
+export { TutorialPanel } from './TutorialPanel';
+// Consolidated Panel
+export { ConsolidatedToolsPanel } from './ConsolidatedToolsPanel';

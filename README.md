@@ -178,10 +178,33 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 ### Policy Loading from HuggingFace Hub
 - **Browse LeRobot Policies** - Search and discover trained policies from HuggingFace Hub
 - **ONNX Runtime** - Run policies locally in browser using ONNX Runtime Web
+- **SafeTensors Support** - Load SafeTensors model weights directly (native HuggingFace format)
 - **Policy Types Supported** - ACT (Action Chunking Transformer), Diffusion, TD-MPC, VQ-BeT
 - **SO-101 Compatible** - Filter and load policies trained for SO-101/Koch robot arms
 - **Real-time Inference** - Execute policies at 20Hz for smooth robot control
 - **No Server Required** - All inference runs client-side in WebAssembly
+
+### LeRobot Dataset Recording & Export
+- **Real Apache Parquet** - Export datasets in true Parquet format (LeRobot v2.0/v3.0 compatible)
+- **Multi-Camera Recording** - Support for cam_high, cam_wrist, cam_left, cam_right views
+- **Dataset Statistics Dashboard** - Analyze episode counts, success rates, joint coverage
+- **Quality Recommendations** - Get feedback on data quality for training readiness
+- **Dataset Browser** - Browse and preview LeRobot datasets from HuggingFace Hub
+- **HuggingFace Upload** - Direct upload datasets to HuggingFace Hub with token auth
+- **Task Success Detection** - Automatic detection for reach, pick & place, push, stack tasks
+
+### Interactive Tutorial System
+- **Guided Tutorials** - Step-by-step walkthroughs for new users
+- **Three Modules** - Getting Started, AI Features, Data Collection
+- **Progress Tracking** - Completion status saved locally
+- **Panel Highlighting** - Points to relevant UI elements
+- **Tips & Hints** - Contextual tips for each step
+
+### Consolidated UI
+- **Tabbed Tool Categories** - Control, AI, Data, Hardware, Settings tabs
+- **Reduced Clutter** - 20+ panels organized into 5 logical categories
+- **Collapsible Sections** - Expand only what you need
+- **Quick Access** - Most-used tools open by default
 
 ## Tech Stack
 
@@ -444,9 +467,13 @@ src/
 │   │   ├── Humanoid3D.tsx
 │   │   └── ...
 │   ├── controls/        # UI control panels
+│   │   ├── ConsolidatedToolsPanel.tsx # Tabbed tool categories (Control, AI, Data, Hardware, Settings)
 │   │   ├── AdvancedControlsPanel.tsx  # IK, keyboard, gamepad modes
 │   │   ├── TaskTemplatesPanel.tsx     # Pick & place sequences
 │   │   ├── PolicyBrowserPanel.tsx     # HuggingFace policy loader
+│   │   ├── DatasetBrowserPanel.tsx    # Browse LeRobot datasets
+│   │   ├── DatasetStatsPanel.tsx      # Dataset quality analysis
+│   │   ├── TutorialPanel.tsx          # Interactive tutorials
 │   │   ├── AIEnvironmentPanel.tsx     # AI-generated environments and objects
 │   │   ├── VoiceControlPanel.tsx      # Voice command interface
 │   │   ├── VisionAnalysisPanel.tsx    # Scene understanding with AI
@@ -478,6 +505,10 @@ src/
 │   ├── logger.ts              # Structured logging utility
 │   ├── huggingfaceHub.ts      # HuggingFace Hub API integration
 │   ├── policyRunner.ts        # ONNX Runtime policy execution
+│   ├── safetensorsLoader.ts   # SafeTensors model format loader
+│   ├── parquetWriter.ts       # Apache Parquet file writer
+│   ├── taskDetection.ts       # Task success detection
+│   ├── huggingfaceUpload.ts   # HuggingFace Hub dataset upload
 │   ├── trajectoryPlanner.ts   # Motion interpolation
 │   ├── serialConnection.ts    # Web Serial API
 │   └── ...

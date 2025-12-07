@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from './components/layout';
-import { LandingPage, LearnMorePage, HowToUsePage, InstructionsPage } from './components/pages';
+import { LandingPage, LearnMorePage, InstructionsPage } from './components/pages';
 import { useLoadSharedState } from './hooks/useLoadSharedState';
 import { useAuthStore } from './stores/useAuthStore';
 
-type MarketingPage = 'landing' | 'learnmore' | 'how-to-use' | 'instructions';
+type MarketingPage = 'landing' | 'learnmore' | 'how-to-use';
 
 function getPageFromPath(): MarketingPage {
   const path = window.location.pathname;
   if (path === '/learnmore') return 'learnmore';
   if (path === '/how-to-use') return 'how-to-use';
-  if (path === '/instructions') return 'instructions';
   return 'landing';
 }
 
@@ -51,14 +50,6 @@ function App() {
     }
     if (marketingPage === 'how-to-use') {
       return (
-        <HowToUsePage
-          onBack={() => navigateTo('landing')}
-          onGetStarted={handleGetStarted}
-        />
-      );
-    }
-    if (marketingPage === 'instructions') {
-      return (
         <InstructionsPage
           onBack={() => navigateTo('landing')}
           onGetStarted={handleGetStarted}
@@ -69,8 +60,7 @@ function App() {
       <LandingPage
         onLogin={handleGetStarted}
         onLearnMore={() => navigateTo('learnmore')}
-        onHowToUse={() => navigateTo('how-to-use')}
-        onInstructions={() => navigateTo('instructions')}
+        onInstructions={() => navigateTo('how-to-use')}
       />
     );
   }

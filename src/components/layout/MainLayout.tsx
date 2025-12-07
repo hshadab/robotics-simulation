@@ -1,48 +1,14 @@
 import React, { useState } from 'react';
 import { SimulationViewport, SensorPanel } from '../simulation';
 import { ChatPanel } from '../chat';
-import { JointControls, PresetButtons, EnvironmentSelector, ChallengePanel, DatasetRecorderPanel, DatasetPlayerPanel, HandTrackingPanel, ShareButton, AdvancedControlsPanel, TaskTemplatesPanel, JointTrajectoryGraph, SerialConnectionPanel, PolicyBrowserPanel, SensorRealismPanel, VisionPanel, SaveLoadPanel, MultiRobotPanel, NumericalIKPanel, AIEnvironmentPanel, VoiceControlPanel, VisionAnalysisPanel, TextTo3DPanel } from '../controls';
+import { JointControls, ShareButton, ConsolidatedToolsPanel } from '../controls';
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';
 import { ApiKeySettings } from '../settings/ApiKeySettings';
-import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, ChevronDown, ChevronRight, Sliders, Brain, Database, Cpu, Activity, Hand, BarChart3, ListChecks, Wifi, Radio, Camera, HardDrive, Users, Crosshair, Sparkles, Mic, Eye, Box, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, Brain, Database, Mic, Eye, Box, Sparkles, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button, Select } from '../common';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { ROBOT_PROFILES } from '../../config/robots';
-
-// Collapsible panel component for secondary controls
-interface CollapsiblePanelProps {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}
-
-const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({ title, icon, children, defaultOpen = false }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="border border-slate-700/50 rounded-lg overflow-hidden bg-slate-800/30">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-slate-700/30 transition"
-      >
-        <span className="text-slate-400">{icon}</span>
-        <span className="text-sm font-medium text-slate-300 flex-1">{title}</span>
-        {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-slate-500" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-slate-500" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="border-t border-slate-700/50">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-};
 
 type Tab = 'simulate' | 'code' | 'learn' | 'docs';
 
@@ -189,7 +155,7 @@ export const MainLayout: React.FC = () => {
 
 const SimulateTab: React.FC = () => {
   const { setControlMode, setShowWorkspace } = useAppStore();
-  const [showToolsPanel, setShowToolsPanel] = useState(false);
+  const [showToolsPanel, setShowToolsPanel] = useState(true);
 
   return (
     <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
@@ -206,7 +172,7 @@ const SimulateTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Collapsible Tools Panel */}
+        {/* Right: Consolidated Tools Panel */}
         <div className={`flex-shrink-0 border-l border-slate-700/50 transition-all duration-300 ${showToolsPanel ? 'w-80' : 'w-12'}`}>
           {showToolsPanel ? (
             <div className="h-full flex flex-col">
@@ -222,115 +188,11 @@ const SimulateTab: React.FC = () => {
                 </button>
               </div>
 
-              {/* Scrollable Tools */}
-              <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {/* Joint Controls - Often used, default open */}
-                <CollapsiblePanel title="Joint Controls" icon={<Sliders className="w-4 h-4" />} defaultOpen={true}>
-                  <JointControls />
-                </CollapsiblePanel>
-
-                {/* Quick Presets */}
-                <CollapsiblePanel title="Presets" icon={<ListChecks className="w-4 h-4" />}>
-                  <PresetButtons />
-                </CollapsiblePanel>
-
-                {/* Environment */}
-                <CollapsiblePanel title="Environment" icon={<Gamepad2 className="w-4 h-4" />}>
-                  <EnvironmentSelector />
-                </CollapsiblePanel>
-
-                {/* Sensors */}
-                <CollapsiblePanel title="Sensors" icon={<Activity className="w-4 h-4" />}>
-                  <SensorPanel />
-                </CollapsiblePanel>
-
-                {/* Sensor Realism (Noise Models) */}
-                <CollapsiblePanel title="Sensor Realism" icon={<Radio className="w-4 h-4" />}>
-                  <SensorRealismPanel />
-                </CollapsiblePanel>
-
-                {/* Robot Vision (Camera/Blob Detection) */}
-                <CollapsiblePanel title="Robot Vision" icon={<Camera className="w-4 h-4" />}>
-                  <VisionPanel />
-                </CollapsiblePanel>
-
-                {/* AI Environment Generator */}
-                <CollapsiblePanel title="AI Environment" icon={<Sparkles className="w-4 h-4" />}>
-                  <AIEnvironmentPanel />
-                </CollapsiblePanel>
-
-                {/* Voice Control */}
-                <VoiceControlPanel />
-
-                {/* Vision Analysis */}
-                <VisionAnalysisPanel />
-
-                {/* Text to 3D */}
-                <TextTo3DPanel />
-
-                {/* Trajectory Graph */}
-                <CollapsiblePanel title="Trajectory" icon={<BarChart3 className="w-4 h-4" />}>
-                  <JointTrajectoryGraph height={120} />
-                </CollapsiblePanel>
-
-                {/* AI Policies */}
-                <CollapsiblePanel title="LeRobot Policies" icon={<Brain className="w-4 h-4" />}>
-                  <PolicyBrowserPanel />
-                </CollapsiblePanel>
-
-                {/* Advanced Controls */}
-                <CollapsiblePanel title="Advanced Controls" icon={<Settings className="w-4 h-4" />}>
-                  <AdvancedControlsPanel
-                    onModeChange={setControlMode}
-                    onShowWorkspace={setShowWorkspace}
-                  />
-                </CollapsiblePanel>
-
-                {/* Numerical IK Solver */}
-                <CollapsiblePanel title="Numerical IK" icon={<Crosshair className="w-4 h-4" />}>
-                  <NumericalIKPanel />
-                </CollapsiblePanel>
-
-                {/* Task Templates */}
-                <CollapsiblePanel title="Task Templates" icon={<ListChecks className="w-4 h-4" />}>
-                  <TaskTemplatesPanel />
-                </CollapsiblePanel>
-
-                {/* Save/Load State */}
-                <CollapsiblePanel title="Save / Load" icon={<HardDrive className="w-4 h-4" />}>
-                  <SaveLoadPanel />
-                </CollapsiblePanel>
-
-                {/* Multi-Robot (Swarm) */}
-                <CollapsiblePanel title="Multi-Robot" icon={<Users className="w-4 h-4" />}>
-                  <MultiRobotPanel />
-                </CollapsiblePanel>
-
-                {/* Hardware Connection */}
-                <CollapsiblePanel title="Serial Connection" icon={<Wifi className="w-4 h-4" />}>
-                  <SerialConnectionPanel />
-                </CollapsiblePanel>
-
-                {/* Hand Tracking */}
-                <CollapsiblePanel title="Hand Tracking" icon={<Hand className="w-4 h-4" />}>
-                  <HandTrackingPanel />
-                </CollapsiblePanel>
-
-                {/* Dataset Recording */}
-                <CollapsiblePanel title="Dataset Recorder" icon={<Database className="w-4 h-4" />}>
-                  <DatasetRecorderPanel />
-                </CollapsiblePanel>
-
-                {/* Dataset Player */}
-                <CollapsiblePanel title="Dataset Player" icon={<Play className="w-4 h-4" />}>
-                  <DatasetPlayerPanel />
-                </CollapsiblePanel>
-
-                {/* Challenges */}
-                <CollapsiblePanel title="Challenges" icon={<Cpu className="w-4 h-4" />}>
-                  <ChallengePanel />
-                </CollapsiblePanel>
-              </div>
+              {/* Consolidated Tools with Categorized Tabs */}
+              <ConsolidatedToolsPanel
+                onModeChange={setControlMode}
+                onShowWorkspace={setShowWorkspace}
+              />
             </div>
           ) : (
             /* Collapsed state - just show expand button */

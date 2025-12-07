@@ -10,6 +10,7 @@
  */
 
 import type { Episode } from './datasetExporter';
+import { episodesToParquetFormat, writeParquetFilePure, validateParquetData } from './parquetWriter';
 
 // LeRobot dataset structure
 export interface LeRobotDatasetInfo {
@@ -425,12 +426,29 @@ export async function exportLeRobotDataset(
   const episodesMeta = generateEpisodesJsonl(episodes);
   zip.file('meta/episodes.jsonl', episodesMeta);
 
-  // data/chunk-000/episode_XXXXXX.parquet (as JSON for now)
-  // In a full implementation, we'd use parquet-wasm here
+  // data/chunk-000/episode_XXXXXX.parquet - Real Parquet files
   for (let i = 0; i < episodes.length; i++) {
-    const episodeData = episodesToParquetData([episodes[i]], fps);
-    const filename = `data/chunk-000/episode_${String(i).padStart(6, '0')}.json`;
-    zip.file(filename, JSON.stringify(episodeData.columns, null, 2));
+    try {
+      // Convert episode to Parquet format
+      const parquetData = episodesToParquetFormat([episodes[i]], fps);
+
+      // Validate the data
+      const validation = validateParquetData(parquetData);
+      if (!validation.valid) {
+        console.warn(`Episode ${i} validation warnings:`, validation.errors);
+      }
+
+      // Write as Parquet binary
+      const parquetBytes = await writeParquetFilePure(parquetData);
+      const filename = `data/chunk-000/episode_${String(i).padStart(6, '0')}.parquet`;
+      zip.file(filename, parquetBytes);
+    } catch (error) {
+      // Fallback to JSON if Parquet fails
+      console.warn(`Parquet write failed for episode ${i}, using JSON fallback:`, error);
+      const episodeData = episodesToParquetData([episodes[i]], fps);
+      const filename = `data/chunk-000/episode_${String(i).padStart(6, '0')}.json`;
+      zip.file(filename, JSON.stringify(episodeData.columns, null, 2));
+    }
   }
 
   // videos/observation.images.cam_high/episode_XXXXXX.mp4
