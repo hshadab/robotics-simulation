@@ -32,6 +32,7 @@ interface LandingPageProps {
   onLogin: () => void;
   onLearnMore?: () => void;
   onHowToUse?: () => void;
+  onInstructions?: () => void;
 }
 
 // Brutalist Robot Arm SVG
@@ -420,7 +421,7 @@ const HOW_IT_WORKS_STEPS = [
   },
 ];
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onHowToUse }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onHowToUse, onInstructions }) => {
   const [hoveredRobot, setHoveredRobot] = useState<string | null>(null);
   const [activeFeatureTab, setActiveFeatureTab] = useState<FeatureTab>('chat');
   const [activeUseCaseTab, setActiveUseCaseTab] = useState<UseCaseTab>('collect');
@@ -471,6 +472,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onHowToUs
               className="text-slate-400 hover:text-white transition font-medium"
             >
               Learn More
+            </a>
+          )}
+          {onInstructions && (
+            <a
+              href="/instructions"
+              onClick={(e) => {
+                e.preventDefault();
+                onInstructions();
+              }}
+              className="text-slate-400 hover:text-white transition font-medium"
+            >
+              Instructions
             </a>
           )}
           <button
