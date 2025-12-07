@@ -32,5 +32,7 @@ export { DatasetStatsPanel } from './DatasetStatsPanel';
 export { TutorialPanel } from './TutorialPanel';
 export { GuidedChallengePanel } from './GuidedChallengePanel';
 export { HuggingFaceUploadPanel } from './HuggingFaceUploadPanel';
+// Image to 3D (CSM)
+export { ImageTo3DPanel } from './ImageTo3DPanel';
 // Consolidated Panel
 export { ConsolidatedToolsPanel } from './ConsolidatedToolsPanel';

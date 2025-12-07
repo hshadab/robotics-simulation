@@ -192,7 +192,7 @@ export function useCodeCopilot(options: UseCodeCopilotOptions = {}) {
     async (
       editor: editor.IStandaloneCodeEditor,
       errorMessage: string,
-      monaco: typeof import('monaco-editor')
+      _monaco: typeof import('monaco-editor')
     ) => {
       const model = editor.getModel();
       if (!model) return;
@@ -246,7 +246,7 @@ export function useCodeCopilot(options: UseCodeCopilotOptions = {}) {
         keybindings: [
           monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyG,
         ],
-        run: (ed) => generateFromComment(ed, monaco),
+        run: (ed) => generateFromComment(ed as editor.IStandaloneCodeEditor, monaco),
       });
 
       // Ctrl/Cmd + Shift + E: Explain selected code

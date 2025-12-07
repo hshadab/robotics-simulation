@@ -64,6 +64,7 @@ import { VisionPanel } from './VisionPanel';
 import { SaveLoadPanel } from './SaveLoadPanel';
 import { ChallengePanel } from './ChallengePanel';
 import { HuggingFaceUploadPanel } from './HuggingFaceUploadPanel';
+import { ImageTo3DPanel } from './ImageTo3DPanel';
 import { SensorPanel } from '../simulation/SensorPanel';
 import { useAppStore } from '../../stores/useAppStore';
 
@@ -264,6 +265,11 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
 
             {/* Text to 3D */}
             <TextTo3DPanel />
+
+            {/* Image to 3D */}
+            <CollapsibleSection title="Image to 3D" icon={<Camera className="w-4 h-4" />} badge="CSM">
+              <ImageTo3DPanel />
+            </CollapsibleSection>
 
             {/* AI Environment */}
             <CollapsibleSection title="AI Environment" icon={<Sparkles className="w-4 h-4" />}>

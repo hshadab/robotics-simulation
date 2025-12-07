@@ -593,7 +593,7 @@ Respond with:
  * Get inline completion suggestion
  */
 export async function getInlineCompletion(
-  code: string,
+  _code: string,
   cursorLine: string
 ): Promise<string | null> {
   // Check if typing a comment that describes code

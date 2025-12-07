@@ -148,15 +148,13 @@ export async function generateFromText(
   logger.info(`Generating 3D object: "${request.description}"`);
 
   // Find matching object type
-  let generator = createBox; // default
-  let baseScale = 0.04;
+  let generator: (desc: string, style: string) => THREE.Mesh | THREE.Group = createBox; // default
   let mass = 0.2;
   let grabbable = true;
 
   for (const mapping of OBJECT_MAPPINGS) {
     if (mapping.keywords.some(kw => description.includes(kw))) {
-      generator = mapping.generator;
-      baseScale = mapping.baseScale;
+      generator = mapping.generator as (desc: string, style: string) => THREE.Mesh | THREE.Group;
       mass = mapping.mass;
       grabbable = mapping.grabbable;
       break;
@@ -164,7 +162,7 @@ export async function generateFromText(
   }
 
   // Create the mesh
-  let mesh = generator(description, style);
+  let mesh: THREE.Mesh | THREE.Group = generator(description, style);
   mesh.scale.multiplyScalar(scale);
 
   // Extract and apply color

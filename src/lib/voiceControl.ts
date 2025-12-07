@@ -48,7 +48,7 @@ const DEFAULT_CONFIG: VoiceControlConfig = {
 };
 
 // Check if Web Speech API is available
-const SpeechRecognition = typeof window !== 'undefined'
+const SpeechRecognitionApi: (new () => SpeechRecognitionInstance) | null = typeof window !== 'undefined'
   ? (window.SpeechRecognition || window.webkitSpeechRecognition)
   : null;
 
@@ -58,7 +58,7 @@ const SpeechSynthesis = typeof window !== 'undefined' ? window.speechSynthesis :
  * Check if voice control is supported in the current browser
  */
 export function isVoiceControlSupported(): boolean {
-  return SpeechRecognition !== null && SpeechSynthesis !== null;
+  return SpeechRecognitionApi !== null && SpeechSynthesis !== null;
 }
 
 /**
@@ -73,7 +73,7 @@ export function getAvailableVoices(): SpeechSynthesisVoice[] {
  * Voice Control Manager
  */
 export class VoiceControlManager {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: SpeechRecognitionInstance | null = null;
   private config: VoiceControlConfig;
   private state: VoiceControlState = 'inactive';
   private commandHandlers: VoiceCommandHandler[] = [];
@@ -95,9 +95,9 @@ export class VoiceControlManager {
   }
 
   private initRecognition(): void {
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognitionApi) return;
 
-    this.recognition = new SpeechRecognition();
+    this.recognition = new SpeechRecognitionApi();
     this.recognition.continuous = this.config.continuous;
     this.recognition.interimResults = this.config.interimResults;
     this.recognition.lang = this.config.language;
@@ -151,7 +151,7 @@ export class VoiceControlManager {
     SpeechSynthesis.onvoiceschanged = loadVoices;
   }
 
-  private handleRecognitionResult(event: SpeechRecognitionEvent): void {
+  private handleRecognitionResult(event: SpeechRecognitionEventLocal): void {
     const result = event.results[event.results.length - 1];
     const transcript = result[0].transcript.trim().toLowerCase();
     const confidence = result[0].confidence;
@@ -415,9 +415,30 @@ export function categorizeVoiceCommand(transcript: string): string {
 }
 
 // Add TypeScript types for Web Speech API (not fully typed in lib.dom.d.ts)
+interface SpeechRecognitionErrorEventLocal extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionEventLocal extends Event {
+  results: SpeechRecognitionResultList;
+}
+
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
   }
+}
+
+interface SpeechRecognitionInstance {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLocal) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLocal) => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
 }

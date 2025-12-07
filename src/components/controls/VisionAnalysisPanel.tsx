@@ -64,13 +64,14 @@ export const VisionAnalysisPanel: React.FC<VisionAnalysisPanelProps> = ({
   defaultOpen = false,
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [lastAnalysis, setLastAnalysis] = useState<SceneAnalysis | null>(null);
+  const [_lastAnalysis, setLastAnalysis] = useState<SceneAnalysis | null>(null);
   const [customQuestion, setCustomQuestion] = useState('');
   const [response, setResponse] = useState<VisionResponse | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showImage, setShowImage] = useState(false);
 
-  const { activeRobot, joints, wheeledRobot, drone, humanoid, sensors } = useAppStore();
+  const { activeRobotType, joints, wheeledRobot, drone, humanoid, sensors } = useAppStore();
+  const activeRobot = activeRobotType;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -155,7 +156,7 @@ export const VisionAnalysisPanel: React.FC<VisionAnalysisPanelProps> = ({
         imageData,
         context: {
           robotType: activeRobot,
-          jointPositions: joints,
+          jointPositions: joints as unknown as Record<string, number>,
         },
       });
 

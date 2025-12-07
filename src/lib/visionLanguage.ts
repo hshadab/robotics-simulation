@@ -10,7 +10,7 @@
  */
 
 import { getClaudeApiKey } from './claudeApi';
-import { detectObjects, classifyImage, classifyImageZeroShot, type ObjectDetectionResult } from './transformersAI';
+import { detectObjects, classifyImage, classifyImageZeroShot } from './transformersAI';
 import { createLogger } from './logger';
 
 const logger = createLogger('VisionLanguage');
