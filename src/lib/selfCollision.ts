@@ -1,24 +1,73 @@
 /**
- * Self-collision prevention for SO-101 robot arm
+ * Self-collision and floor collision prevention for SO-101 robot arm
  *
  * This module implements geometric constraints to prevent the arm
- * from passing through itself. Based on the SO-101 arm geometry.
+ * from passing through itself or the floor. Based on the SO-101 arm geometry.
  */
 
 import type { JointState } from '../types';
 
-// SO-101 arm link lengths (approximate, in arbitrary units)
-// Reserved for future geometric collision detection:
-// baseHeight: 0.08, shoulderLength: 0.10, forearmLength: 0.10, wristLength: 0.08
+// SO-101 arm dimensions (meters) - from SO101Kinematics.ts
+const SO101_DIMS = {
+  baseHeight: 0.025,
+  link1Height: 0.0624,
+  link2Length: 0.0542,
+  link3Length: 0.11257,  // Upper arm
+  link4Length: 0.1349,   // Forearm
+  link5Length: 0.0611,   // Wrist
+  gripperLength: 0.098,
+  shoulderOffset: 0.0388,
+  shoulderLiftOffset: 0.0304,
+};
+
+/**
+ * Calculate approximate gripper Y position for floor collision check
+ */
+function calculateGripperY(joints: JointState): number {
+  const dims = SO101_DIMS;
+  const shoulderLiftRad = (joints.shoulder * Math.PI) / 180;
+  const elbowFlexRad = (joints.elbow * Math.PI) / 180;
+  const wristFlexRad = (joints.wrist * Math.PI) / 180;
+
+  // Start from shoulder pivot height
+  const shoulderHeight = dims.baseHeight + dims.link1Height + dims.link2Length;
+
+  // Upper arm contribution (cos because 0° = vertical up)
+  const upperArmY = dims.link3Length * Math.cos(shoulderLiftRad);
+
+  // Forearm contribution
+  const forearmAngle = shoulderLiftRad + elbowFlexRad;
+  const forearmY = dims.link4Length * Math.cos(forearmAngle);
+
+  // Wrist/gripper contribution
+  const wristAngle = forearmAngle + wristFlexRad;
+  const wristY = (dims.link5Length + dims.gripperLength) * Math.cos(wristAngle);
+
+  return shoulderHeight + upperArmY + forearmY + wristY;
+}
+
+/**
+ * Calculate elbow Y position for floor collision check
+ */
+function calculateElbowY(joints: JointState): number {
+  const dims = SO101_DIMS;
+  const shoulderLiftRad = (joints.shoulder * Math.PI) / 180;
+
+  const shoulderHeight = dims.baseHeight + dims.link1Height + dims.link2Length;
+  const upperArmY = dims.link3Length * Math.cos(shoulderLiftRad);
+
+  return shoulderHeight + upperArmY;
+}
 
 /**
  * Check if the current joint configuration would cause self-collision
- * and return corrected values if needed.
+ * or floor collision and return corrected values if needed.
  *
  * Key collision zones for SO-101:
- * 1. Elbow-to-base collision: When shoulder lifts forward and elbow folds back
- * 2. Wrist-to-shoulder collision: When arm is fully folded
- * 3. Gripper-to-arm collision: When wrist bends back into forearm
+ * 1. Floor collision: When arm reaches below y=0
+ * 2. Elbow-to-base collision: When shoulder lifts forward and elbow folds back
+ * 3. Wrist-to-shoulder collision: When arm is fully folded
+ * 4. Gripper-to-arm collision: When wrist bends back into forearm
  */
 export function preventSelfCollision(
   joints: JointState,
@@ -30,6 +79,51 @@ export function preventSelfCollision(
   }
 
   const corrected = { ...joints };
+
+  // === Floor Collision Prevention ===
+  // Minimum height above floor (small margin)
+  const minHeight = 0.01;
+
+  // Check and correct gripper height
+  let gripperY = calculateGripperY(corrected);
+  let iterations = 0;
+  const maxIterations = 20;
+
+  // If gripper is below floor, gradually reduce shoulder/elbow/wrist angles
+  while (gripperY < minHeight && iterations < maxIterations) {
+    // Strategy: Pull the arm up by reducing forward tilt
+    if (corrected.shoulder > -90) {
+      // Reduce shoulder angle (bring arm more upright)
+      const adjustment = Math.min(5, corrected.shoulder + 90);
+      corrected.shoulder -= adjustment;
+    }
+    if (corrected.elbow < 90 && corrected.elbow > -90) {
+      // Adjust elbow to lift arm
+      if (corrected.shoulder > 0) {
+        corrected.elbow = Math.min(corrected.elbow + 3, 90);
+      } else {
+        corrected.elbow = Math.max(corrected.elbow - 3, -90);
+      }
+    }
+    if (Math.abs(corrected.wrist) > 5) {
+      // Reduce wrist angle toward neutral
+      corrected.wrist *= 0.9;
+    }
+
+    gripperY = calculateGripperY(corrected);
+    iterations++;
+  }
+
+  // Also check elbow height
+  let elbowY = calculateElbowY(corrected);
+  iterations = 0;
+  while (elbowY < minHeight && iterations < maxIterations) {
+    if (corrected.shoulder > -80) {
+      corrected.shoulder -= 5;
+    }
+    elbowY = calculateElbowY(corrected);
+    iterations++;
+  }
 
   // === Collision Zone 1: Elbow-Base Collision ===
   // When shoulder tilts forward (positive) and elbow folds down (negative),
