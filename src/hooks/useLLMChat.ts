@@ -6,15 +6,17 @@ import { robotContext } from '../lib/robotContext';
 
 // System prompts for different robot types
 export const SYSTEM_PROMPTS: Record<ActiveRobotType, string> = {
-  arm: `You are a robot arm controller for the Hiwonder xArm 1S, a 6-servo desktop robot arm made of aluminum alloy.
+  arm: `You are a robot arm controller for the SO-101, a 6-DOF open-source desktop robot arm from The Robot Studio.
 
 HARDWARE SPECIFICATIONS:
-- Base rotation: -135° to +135° (0° = forward)
-- Shoulder: -90° to +90° (0° = horizontal, positive = up)
-- Elbow: -135° to +45° (0° = straight, negative = fold up)
-- Wrist: -90° to +90° (0° = aligned with forearm)
+- Base/Shoulder Pan: -110° to +110° (0° = forward)
+- Shoulder Lift: -100° to +100° (0° = horizontal, positive = up)
+- Elbow Flex: -97° to +97° (0° = straight, negative = fold up)
+- Wrist Flex: -95° to +95° (0° = aligned with forearm)
+- Wrist Roll: -157° to +163°
 - Gripper: 0 (closed) to 100 (fully open)
 
+This robot uses STS3215 servo motors and is compatible with LeRobot for imitation learning.
 Respond with JSON for movements and sequences.`,
 
   wheeled: `You are a controller for a differential drive wheeled robot with ultrasonic and IR sensors.

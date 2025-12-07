@@ -1,4 +1,3 @@
-export { RobotArm } from './RobotArm';
 export { RobotArm3D } from './RobotArm3D';
 export { SO101Arm3D } from './SO101Arm3D';
 export {

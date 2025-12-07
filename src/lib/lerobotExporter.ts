@@ -429,8 +429,21 @@ export async function exportLeRobotDataset(
   // data/chunk-000/episode_XXXXXX.parquet - Real Parquet files
   for (let i = 0; i < episodes.length; i++) {
     try {
-      // Convert episode to Parquet format
-      const parquetData = episodesToParquetFormat([episodes[i]], fps);
+      // Convert episode to Parquet format with normalized structure
+      const normalizedEpisode = {
+        frames: episodes[i].frames.map(f => ({
+          timestamp: f.timestamp,
+          observation: { jointPositions: f.observation.jointPositions },
+          action: { jointTargets: f.action.jointTargets },
+          done: false,
+        })),
+        metadata: {
+          duration: episodes[i].metadata.duration,
+          success: episodes[i].metadata.success ?? true,
+          task: episodes[i].metadata.task,
+        },
+      };
+      const parquetData = episodesToParquetFormat([normalizedEpisode], fps);
 
       // Validate the data
       const validation = validateParquetData(parquetData);

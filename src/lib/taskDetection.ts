@@ -5,7 +5,7 @@
  * Supports various task types common in robot learning.
  */
 
-import type { JointState } from '../stores/useAppStore';
+import type { JointState } from '../types';
 
 /**
  * Task type definitions
@@ -201,7 +201,7 @@ function evaluatePushObject(state: TaskState, goal: TaskGoal): TaskResult {
 /**
  * Evaluate stack objects task
  */
-function evaluateStackObjects(state: TaskState, goal: TaskGoal): TaskResult {
+function evaluateStackObjects(state: TaskState, _goal: TaskGoal): TaskResult {
   if (!state.objectPositions || state.objectPositions.length < 2) {
     return { success: false, progress: 0, reason: 'Need at least 2 objects' };
   }

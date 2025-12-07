@@ -11,7 +11,6 @@ import {
   ChevronRight,
   ChevronLeft,
   CheckCircle,
-  Circle,
   X,
   Lightbulb,
   Gamepad2,

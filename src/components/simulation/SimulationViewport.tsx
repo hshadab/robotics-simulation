@@ -1,6 +1,5 @@
 import React, { useState, Suspense } from 'react';
-import { RotateCcw, Camera, Maximize2, Box, Square, Radio } from 'lucide-react';
-import { RobotArm } from './RobotArm';
+import { RotateCcw, Camera, Maximize2, Radio } from 'lucide-react';
 import { RobotArm3D } from './RobotArm3D';
 import { RobotCameraOverlay } from './RobotCameraView';
 import { Button } from '../common';
@@ -27,7 +26,6 @@ export const SimulationViewport: React.FC = () => {
     controlMode,
     showWorkspace,
   } = useAppStore();
-  const [view3D, setView3D] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
   const [cameraPosition, setCameraPosition] = useState<'gripper' | 'base' | 'overhead'>('gripper');
 
@@ -52,7 +50,7 @@ export const SimulationViewport: React.FC = () => {
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700/50 bg-slate-800/80">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-slate-300">
-            {view3D ? '3D' : '2D'} Simulation
+            3D Simulation
           </span>
           {simulation.status === 'running' && (
             <span className="flex items-center gap-1 text-xs text-green-400">
@@ -62,24 +60,6 @@ export const SimulationViewport: React.FC = () => {
           )}
         </div>
         <div className="flex items-center gap-1">
-          {/* 2D/3D Toggle */}
-          <Button
-            variant={view3D ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setView3D(true)}
-            title="3D View"
-          >
-            <Box className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={!view3D ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => setView3D(false)}
-            title="2D View"
-          >
-            <Square className="w-4 h-4" />
-          </Button>
-          <div className="w-px h-4 bg-slate-600 mx-1" />
           <Button
             variant="ghost"
             size="sm"
@@ -105,37 +85,33 @@ export const SimulationViewport: React.FC = () => {
 
       {/* Viewport */}
       <div className="flex-1 relative">
-        {view3D ? (
-          <Suspense
-            fallback={
-              <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                <div className="text-slate-400">Loading 3D view...</div>
-              </div>
-            }
-          >
-            <RobotArm3D
-              joints={joints}
-              environment={currentEnvironment}
-              objects={objects}
-              targetZones={targetZones}
-              sensors={sensors}
-              sensorVisualization={sensorVisualization}
-              activeRobotType={activeRobotType}
-              wheeledRobot={wheeledRobot}
-              drone={drone}
-              humanoid={humanoid}
-              onDroneStateChange={setDrone}
-              clickToMoveEnabled={controlMode === 'click-to-move'}
-              showWorkspace={showWorkspace}
-              onJointsChange={setJoints}
-            />
-          </Suspense>
-        ) : (
-          <RobotArm joints={joints} />
-        )}
+        <Suspense
+          fallback={
+            <div className="w-full h-full flex items-center justify-center bg-slate-900">
+              <div className="text-slate-400">Loading 3D view...</div>
+            </div>
+          }
+        >
+          <RobotArm3D
+            joints={joints}
+            environment={currentEnvironment}
+            objects={objects}
+            targetZones={targetZones}
+            sensors={sensors}
+            sensorVisualization={sensorVisualization}
+            activeRobotType={activeRobotType}
+            wheeledRobot={wheeledRobot}
+            drone={drone}
+            humanoid={humanoid}
+            onDroneStateChange={setDrone}
+            clickToMoveEnabled={controlMode === 'click-to-move'}
+            showWorkspace={showWorkspace}
+            onJointsChange={setJoints}
+          />
+        </Suspense>
 
         {/* Robot Camera Overlay */}
-        {showCamera && view3D && (
+        {showCamera && (
           <RobotCameraOverlay
             position="top-right"
             size="medium"
@@ -145,7 +121,7 @@ export const SimulationViewport: React.FC = () => {
         )}
 
         {/* Camera position toggle when camera is shown */}
-        {showCamera && view3D && (
+        {showCamera && (
           <button
             onClick={toggleCameraPosition}
             className="absolute top-14 right-52 bg-slate-800/90 rounded px-2 py-1 text-xs text-slate-300 hover:bg-slate-700 border border-slate-600"

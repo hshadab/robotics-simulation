@@ -102,11 +102,6 @@ export async function uploadFile(
   fileContent: Blob | ArrayBuffer,
   onProgress?: (progress: number) => void
 ): Promise<void> {
-  // HuggingFace uses LFS for large files, regular upload for small ones
-  const isLargeFile = fileContent instanceof Blob
-    ? fileContent.size > 10 * 1024 * 1024
-    : fileContent.byteLength > 10 * 1024 * 1024;
-
   const uploadUrl = `${HF_API_BASE}/datasets/${repoId}/upload/main/${encodeURIComponent(filePath)}`;
 
   // Convert to Blob if ArrayBuffer

@@ -164,26 +164,24 @@ function computeStats(values: number[]): JointStats {
   return { min, max, mean, std, range: max - min };
 }
 
-/**
- * Simple bar chart component
- */
-const MiniBarChart: React.FC<{ values: number[]; maxValue: number; color: string }> = ({
-  values,
-  maxValue,
-  color,
-}) => {
-  return (
-    <div className="flex items-end gap-0.5 h-8">
-      {values.map((v, i) => (
-        <div
-          key={i}
-          className={`w-2 rounded-t ${color}`}
-          style={{ height: `${Math.max(2, (v / maxValue) * 100)}%` }}
-        />
-      ))}
-    </div>
-  );
-};
+// MiniBarChart component for future use
+// const MiniBarChart: React.FC<{ values: number[]; maxValue: number; color: string }> = ({
+//   values,
+//   maxValue,
+//   color,
+// }) => {
+//   return (
+//     <div className="flex items-end gap-0.5 h-8">
+//       {values.map((v, i) => (
+//         <div
+//           key={i}
+//           className={`w-2 rounded-t ${color}`}
+//           style={{ height: `${Math.max(2, (v / maxValue) * 100)}%` }}
+//         />
+//       ))}
+//     </div>
+//   );
+// };
 
 /**
  * Joint coverage visualization
@@ -222,7 +220,7 @@ const JointCoverage: React.FC<{ stats: JointStats; jointIndex: number }> = ({
   );
 };
 
-export const DatasetStatsPanel: React.FC<DatasetStatsProps> = ({ episodes, robotType = 'so-101' }) => {
+export const DatasetStatsPanel: React.FC<DatasetStatsProps> = ({ episodes, robotType: _robotType = 'so-101' }) => {
   const [expanded, setExpanded] = useState(true);
   const [showJointDetails, setShowJointDetails] = useState(false);
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SimulationViewport, SensorPanel } from '../simulation';
+import { SimulationViewport } from '../simulation';
 import { ChatPanel } from '../chat';
 import { JointControls, ShareButton, ConsolidatedToolsPanel } from '../controls';
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';

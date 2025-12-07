@@ -5,12 +5,11 @@
  * Allows users to explore available training data and download for comparison.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Database,
   Search,
   Download,
-  Play,
   ChevronDown,
   ChevronUp,
   RefreshCw,

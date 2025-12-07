@@ -18,9 +18,6 @@ import {
   Radio,
   Camera,
   Sparkles,
-  Mic,
-  Eye,
-  Box,
   BarChart3,
   Crosshair,
   HardDrive,
@@ -28,8 +25,6 @@ import {
   Hand,
   Play,
   Cpu,
-  BookOpen,
-  Upload,
   Search,
   ChevronDown,
   ChevronRight,
@@ -127,8 +122,10 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   );
 };
 
+type ControlMode = 'manual' | 'click-to-move' | 'keyboard' | 'gamepad';
+
 interface ConsolidatedToolsPanelProps {
-  onModeChange?: (mode: string) => void;
+  onModeChange?: (mode: ControlMode) => void;
   onShowWorkspace?: (show: boolean) => void;
 }
 
