@@ -462,15 +462,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onHowToUs
             How It Works
           </a>
           {onLearnMore && (
-            <button
-              onClick={() => {
-                window.location.hash = '';
+            <a
+              href="/learnmore"
+              onClick={(e) => {
+                e.preventDefault();
                 onLearnMore();
               }}
               className="text-slate-400 hover:text-white transition font-medium"
             >
               Learn More
-            </button>
+            </a>
           )}
           <button
             onClick={handleEnterApp}

@@ -1,27 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MainLayout } from './components/layout';
 import { LandingPage, LearnMorePage, HowToUsePage } from './components/pages';
 import { useLoadSharedState } from './hooks/useLoadSharedState';
 import { useAuthStore } from './stores/useAuthStore';
 
-type MarketingPage = 'landing' | 'learn-more' | 'how-to-use';
+type MarketingPage = 'landing' | 'learnmore' | 'how-to-use';
+
+function getPageFromPath(): MarketingPage {
+  const path = window.location.pathname;
+  if (path === '/learnmore') return 'learnmore';
+  if (path === '/how-to-use') return 'how-to-use';
+  return 'landing';
+}
 
 function App() {
   const { isAuthenticated, login } = useAuthStore();
-  const [marketingPage, setMarketingPage] = useState<MarketingPage>('landing');
+  const [marketingPage, setMarketingPage] = useState<MarketingPage>(getPageFromPath);
 
   // Load shared state from URL on startup
   useLoadSharedState();
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      setMarketingPage(getPageFromPath());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleGetStarted = () => {
     login('demo@robosim.dev');
   };
 
+  const navigateTo = (page: MarketingPage) => {
+    const path = page === 'landing' ? '/' : `/${page}`;
+    window.history.pushState({}, '', path);
+    setMarketingPage(page);
+  };
+
   if (!isAuthenticated) {
-    if (marketingPage === 'learn-more') {
+    if (marketingPage === 'learnmore') {
       return (
         <LearnMorePage
-          onBack={() => setMarketingPage('landing')}
+          onBack={() => navigateTo('landing')}
           onGetStarted={handleGetStarted}
         />
       );
@@ -29,7 +51,7 @@ function App() {
     if (marketingPage === 'how-to-use') {
       return (
         <HowToUsePage
-          onBack={() => setMarketingPage('landing')}
+          onBack={() => navigateTo('landing')}
           onGetStarted={handleGetStarted}
         />
       );
@@ -37,8 +59,8 @@ function App() {
     return (
       <LandingPage
         onLogin={handleGetStarted}
-        onLearnMore={() => setMarketingPage('learn-more')}
-        onHowToUse={() => setMarketingPage('how-to-use')}
+        onLearnMore={() => navigateTo('learnmore')}
+        onHowToUse={() => navigateTo('how-to-use')}
       />
     );
   }

@@ -193,7 +193,7 @@ export const LearnMorePage: React.FC<LearnMorePageProps> = ({ onBack, onGetStart
       {/* Hero */}
       <section className="relative px-8 pt-8 pb-16 max-w-5xl mx-auto">
         <h1 className="text-4xl md:text-5xl font-black text-white mb-6 leading-tight">
-          How <span className="text-blue-400">RoboSim</span> Works
+          Learn More About <span className="text-blue-400">RoboSim</span>
         </h1>
         <p className="text-xl text-slate-400 max-w-3xl">
           RoboSim is an AI-native robotics simulation platform that runs entirely in your browser.
