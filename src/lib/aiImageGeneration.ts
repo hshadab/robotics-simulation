@@ -54,7 +54,7 @@ export interface AITextureRequest {
 let globalConfig: AIImageConfig = {
   provider: 'gemini',
   apiKey: '',
-  model: 'gemini-2.0-flash-preview-image-generation',
+  model: 'gemini-2.0-flash-exp',
 };
 
 /**
