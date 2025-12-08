@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Bot, ArrowLeft, MousePointer2, Keyboard, Gamepad2, Package, LineChart,
   Usb, Play, Target, Layers, ChevronDown, ChevronRight, Zap, Hand,
-  Code, Download, Settings, Brain, Cpu, CheckCircle
+  Code, Download, Settings, Brain, Cpu, CheckCircle, Mic, Eye, Box,
+  Camera, Wand2, GraduationCap, Upload, Palette
 } from 'lucide-react';
 
 interface HowToUsePageProps {
@@ -356,6 +357,290 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
           title: 'Export to Hardware',
           description: 'Use the export dropdown to generate Arduino, Python, or MicroPython code.',
           tip: 'Templates are available for common tasks'
+        },
+      ],
+    },
+    {
+      id: 'voice',
+      title: 'Voice Control',
+      icon: <Mic className="w-5 h-5" />,
+      color: 'cyan',
+      benefit: 'Control the robot hands-free using voice commands - just say what you want!',
+      steps: [
+        {
+          title: 'Open Voice Control Panel',
+          description: 'In the AI tab of the Tools panel, find "Voice Control".',
+        },
+        {
+          title: 'Allow Microphone Access',
+          description: 'Click the microphone button and allow browser microphone permission.',
+        },
+        {
+          title: 'Speak Commands',
+          description: 'Say commands like "wave hello", "open gripper", "move left", or "go home".',
+        },
+        {
+          title: 'Enable Wake Word (Optional)',
+          description: 'Turn on wake word to say "Hey Robot" before each command for hands-free use.',
+          tip: 'Works best in Chrome or Edge browsers'
+        },
+      ],
+    },
+    {
+      id: 'vision',
+      title: 'Vision AI Analysis',
+      icon: <Eye className="w-5 h-5" />,
+      color: 'pink',
+      benefit: 'Ask questions about the scene and get AI-powered answers about objects and positions.',
+      steps: [
+        {
+          title: 'Open Vision Analysis Panel',
+          description: 'In the AI tab, find "Vision Analysis" panel.',
+        },
+        {
+          title: 'Capture the Scene',
+          description: 'Click "Analyze Scene" to capture the current 3D view.',
+        },
+        {
+          title: 'Ask Questions',
+          description: 'Type questions like "What objects are in the scene?" or "Where is the red cube?"',
+        },
+        {
+          title: 'Get Suggestions',
+          description: 'The AI provides suggested robot actions based on the scene analysis.',
+          tip: 'Enter your Anthropic API key in settings for enhanced analysis'
+        },
+      ],
+    },
+    {
+      id: 'text3d',
+      title: 'Text to 3D Objects',
+      icon: <Box className="w-5 h-5" />,
+      color: 'emerald',
+      benefit: 'Generate 3D objects from text descriptions - create training environments instantly.',
+      steps: [
+        {
+          title: 'Open Text to 3D Panel',
+          description: 'In the AI tab, find "Text to 3D" panel.',
+        },
+        {
+          title: 'Describe Your Object',
+          description: 'Type a description like "red apple", "wooden cube", or "blue ball".',
+        },
+        {
+          title: 'Choose Style',
+          description: 'Select style: Realistic, Cartoon, Low-poly, or Voxel.',
+        },
+        {
+          title: 'Generate and Add',
+          description: 'Click Generate. The object appears in the scene with physics enabled.',
+          tip: 'Enable AI textures with a Gemini API key for more realistic objects'
+        },
+      ],
+    },
+    {
+      id: 'image3d',
+      title: 'Image to 3D (CSM)',
+      icon: <Camera className="w-5 h-5" />,
+      color: 'teal',
+      benefit: 'Upload a photo of any real object and convert it to a training-ready 3D model.',
+      steps: [
+        {
+          title: 'Open Image to 3D Panel',
+          description: 'In the AI tab, find "Image to 3D" panel with CSM badge.',
+        },
+        {
+          title: 'Enter CSM API Key',
+          description: 'Get a free API key from csm.ai (10 free credits) and enter it.',
+        },
+        {
+          title: 'Upload Object Photo',
+          description: 'Drag & drop or click to upload a photo of a real object (screwdriver, cup, etc.).',
+        },
+        {
+          title: 'Set Dimensions',
+          description: 'Enter the real-world size of the object in meters (width, height, depth).',
+        },
+        {
+          title: 'Generate Model',
+          description: 'Click Generate. CSM creates a 3D model with auto-estimated grasp points.',
+          tip: 'Generated models include physics config and training task templates'
+        },
+      ],
+    },
+    {
+      id: 'policies',
+      title: 'LeRobot Policy Browser',
+      icon: <Brain className="w-5 h-5" />,
+      color: 'purple',
+      benefit: 'Load and run pre-trained AI policies from HuggingFace Hub directly in your browser.',
+      steps: [
+        {
+          title: 'Open Policy Browser',
+          description: 'In the AI tab, find "LeRobot Policies" panel.',
+        },
+        {
+          title: 'Search for Policies',
+          description: 'Browse or search for SO-101 compatible policies on HuggingFace Hub.',
+        },
+        {
+          title: 'Download Policy',
+          description: 'Click Download on a policy with ONNX format. Wait for download to complete.',
+        },
+        {
+          title: 'Run the Policy',
+          description: 'Click Run to start autonomous policy execution at 20Hz.',
+          tip: 'Policies run locally using ONNX Runtime Web - no GPU required'
+        },
+      ],
+    },
+    {
+      id: 'autogen',
+      title: 'Auto-Episode Generator',
+      icon: <Wand2 className="w-5 h-5" />,
+      color: 'lime',
+      benefit: 'Generate 100+ training episodes instantly with one click - no manual demos needed.',
+      steps: [
+        {
+          title: 'Open Auto-Generate Panel',
+          description: 'In the Data tab, find "Auto-Generate" panel.',
+        },
+        {
+          title: 'Select Task Templates',
+          description: 'Choose which parameterized tasks to generate episodes for.',
+        },
+        {
+          title: 'Configure Settings',
+          description: 'Set episode count, randomization ranges, and augmentation multiplier.',
+        },
+        {
+          title: 'Generate Episodes',
+          description: 'Click Generate. Episodes are created with randomized parameters.',
+        },
+        {
+          title: 'Export Dataset',
+          description: 'Export to LeRobot format or upload directly to HuggingFace Hub.',
+          tip: 'Combined with augmentation, can generate 1000+ episodes in minutes'
+        },
+      ],
+    },
+    {
+      id: 'challenges',
+      title: 'Guided Challenges',
+      icon: <GraduationCap className="w-5 h-5" />,
+      color: 'rose',
+      benefit: 'Learn robot control through interactive challenges with real-time feedback.',
+      steps: [
+        {
+          title: 'Open Guided Challenges',
+          description: 'In the Control tab, find "Guided Challenges" panel.',
+        },
+        {
+          title: 'Select a Challenge',
+          description: 'Choose from Basic Movement, Reach Position, or Pick Motion challenges.',
+        },
+        {
+          title: 'Follow Instructions',
+          description: 'Each step shows target joint positions you need to match.',
+        },
+        {
+          title: 'Match Positions',
+          description: 'Move joints using sliders or keyboard. Green indicators show when you match.',
+        },
+        {
+          title: 'Complete the Challenge',
+          description: 'Steps auto-advance when matched. Complete all steps to finish.',
+          tip: 'Great for learning joint relationships and robot capabilities'
+        },
+      ],
+    },
+    {
+      id: 'augment',
+      title: 'Dataset Augmentation',
+      icon: <Layers className="w-5 h-5" />,
+      color: 'indigo',
+      benefit: 'Multiply your recorded datasets 2-10x with automatic trajectory variations.',
+      steps: [
+        {
+          title: 'Record Some Episodes',
+          description: 'First record demonstration episodes using the Dataset Recorder.',
+        },
+        {
+          title: 'Open Augmentation Panel',
+          description: 'In the Data tab, find "Augmentation" panel.',
+        },
+        {
+          title: 'Select Augmentation Types',
+          description: 'Choose from: Action Noise, Time Stretch, Spatial Jitter, Temporal Dropout, Mirror.',
+        },
+        {
+          title: 'Set Multiplier',
+          description: 'Choose how many augmented copies to create (2x to 10x).',
+        },
+        {
+          title: 'Generate Augmented Data',
+          description: 'Click Augment. New episodes are created with variations applied.',
+          tip: 'Augmentation helps policies generalize better to real hardware'
+        },
+      ],
+    },
+    {
+      id: 'randomization',
+      title: 'Visual Domain Randomization',
+      icon: <Palette className="w-5 h-5" />,
+      color: 'violet',
+      benefit: 'Randomize lighting, materials, and camera to prepare policies for real-world transfer.',
+      steps: [
+        {
+          title: 'Open Visual Randomization',
+          description: 'In the Settings tab, find "Visual Randomization" panel.',
+        },
+        {
+          title: 'Adjust Lighting',
+          description: 'Randomize ambient intensity, directional light, and shadow softness.',
+        },
+        {
+          title: 'Vary Materials',
+          description: 'Adjust metalness, roughness, and color tinting ranges.',
+        },
+        {
+          title: 'Camera Jitter',
+          description: 'Add FOV and position variations for viewpoint diversity.',
+        },
+        {
+          title: 'Enable Auto-Randomize',
+          description: 'Turn on continuous randomization during recording for domain-randomized datasets.',
+          tip: 'Use presets: Bright Studio, Moody, Outdoor, Factory'
+        },
+      ],
+    },
+    {
+      id: 'upload',
+      title: 'HuggingFace Hub Upload',
+      icon: <Upload className="w-5 h-5" />,
+      color: 'sky',
+      benefit: 'Upload your recorded datasets directly to HuggingFace Hub - no CLI required.',
+      steps: [
+        {
+          title: 'Record Episodes',
+          description: 'Use Dataset Recorder or Auto-Generate to create training data.',
+        },
+        {
+          title: 'Open Upload Panel',
+          description: 'In the Data tab, find "Upload to Hub" panel.',
+        },
+        {
+          title: 'Enter HuggingFace Token',
+          description: 'Get a write token from huggingface.co/settings/tokens and paste it.',
+        },
+        {
+          title: 'Name Your Dataset',
+          description: 'Enter a dataset name. A repository will be created automatically.',
+        },
+        {
+          title: 'Upload',
+          description: 'Click Upload. Progress shows as files are pushed to Hub.',
+          tip: 'Dataset card with metadata is auto-generated'
         },
       ],
     },
