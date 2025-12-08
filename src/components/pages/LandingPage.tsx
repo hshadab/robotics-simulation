@@ -529,43 +529,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
       </section>
 
       {/* Features Deep Dive with Tabs */}
-      <section id="features" className="relative px-8 py-20 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-black text-white mb-4">Powerful Features</h2>
-          <p className="text-xl text-slate-400">Everything you need to build robot intelligence</p>
+      <section id="features" className="relative px-4 md:px-8 py-12 md:py-20 max-w-7xl mx-auto">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-2xl md:text-4xl font-black text-white mb-3 md:mb-4">Powerful Features</h2>
+          <p className="text-base md:text-xl text-slate-400">Everything you need to build robot intelligence</p>
         </div>
 
-        {/* Feature Tabs */}
-        <div className="flex justify-center gap-2 mb-12">
+        {/* Feature Tabs - Scrollable on mobile */}
+        <div className="flex gap-2 mb-8 md:mb-12 overflow-x-auto pb-2 md:pb-0 md:flex-wrap md:justify-center scrollbar-hide">
           {FEATURE_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveFeatureTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 font-bold transition border-2 ${
+              className={`flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 font-bold transition border-2 whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
                 activeFeatureTab === tab.id
                   ? `bg-${tab.color}-500/20 border-${tab.color}-500 text-${tab.color}-400`
                   : 'bg-transparent border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
               }`}
             >
               {tab.icon}
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Active Feature Content */}
-        <div className="grid grid-cols-2 gap-12">
-          {/* Left: Description & Benefits */}
-          <div className={`p-8 bg-slate-800/50 border-2 border-${activeFeature.color}-500/50`}>
+        {/* Active Feature Content - Benefits Only */}
+        <div className="max-w-3xl mx-auto">
+          <div className={`p-6 md:p-8 bg-slate-800/50 border-2 border-${activeFeature.color}-500/50`}>
             <div className={`inline-flex items-center gap-2 text-${activeFeature.color}-400 mb-4`}>
               {activeFeature.icon}
               <span className="font-bold uppercase tracking-wide">{activeFeature.label}</span>
             </div>
-            <h3 className="text-3xl font-bold text-white mb-4">{activeFeature.title}</h3>
-            <p className="text-lg text-slate-400 mb-8">{activeFeature.description}</p>
+            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">{activeFeature.title}</h3>
+            <p className="text-base md:text-lg text-slate-400 mb-6">{activeFeature.description}</p>
 
             <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-4">Benefits</h4>
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
               {activeFeature.benefits.map((benefit, i) => (
                 <li key={i} className="flex items-start gap-3">
                   <Check className={`w-5 h-5 text-${activeFeature.color}-400 flex-shrink-0 mt-0.5`} />
@@ -573,33 +572,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
                 </li>
               ))}
             </ul>
-          </div>
 
-          {/* Right: How to Use */}
-          <div className="p-8 bg-[#0a0f1a] border-2 border-slate-700">
-            <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-6 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              How to Use
-            </h4>
-            <ol className="space-y-6">
-              {activeFeature.howTo.map((step, i) => (
-                <li key={i} className="flex items-start gap-4">
-                  <div className={`w-8 h-8 flex items-center justify-center bg-${activeFeature.color}-500/20 border border-${activeFeature.color}-500/50 text-${activeFeature.color}-400 font-bold text-sm flex-shrink-0`}>
-                    {i + 1}
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-white">{step}</span>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <button
-              onClick={handleEnterApp}
-              className={`mt-8 w-full flex items-center justify-center gap-2 py-3 bg-${activeFeature.color}-500/20 border-2 border-${activeFeature.color}-500/50 text-${activeFeature.color}-400 font-bold hover:bg-${activeFeature.color}-500/30 transition`}
-            >
-              Try {activeFeature.label} Now
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700/50">
+              <button
+                onClick={handleEnterApp}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 bg-${activeFeature.color}-500 text-white font-bold hover:bg-${activeFeature.color}-400 transition`}
+              >
+                Try {activeFeature.label} Now
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              {onInstructions && (
+                <button
+                  onClick={onInstructions}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-slate-600 text-slate-300 font-bold hover:border-slate-500 hover:text-white transition"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  See How It Works
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
