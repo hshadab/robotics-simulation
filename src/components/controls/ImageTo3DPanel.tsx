@@ -33,16 +33,27 @@ import {
   type Generated3DObject,
   type ImageTo3DRequest,
 } from '../../lib/csmImageTo3D';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface ImageTo3DPanelProps {
   onObjectGenerated?: (object: Generated3DObject) => void;
 }
+
+// Size presets for quick mobile selection
+const SIZE_PRESETS = [
+  { id: 'small', label: 'Small', icon: '🔹', dims: [0.05, 0.05, 0.05] },
+  { id: 'medium', label: 'Medium', icon: '🔷', dims: [0.10, 0.10, 0.10] },
+  { id: 'large', label: 'Large', icon: '📦', dims: [0.20, 0.20, 0.20] },
+  { id: 'custom', label: 'Custom', icon: '✏️', dims: null },
+] as const;
 
 export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
   onObjectGenerated,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   // API key state
   const [apiKey, setApiKey] = useState('');
@@ -60,6 +71,22 @@ export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
   const [depth, setDepth] = useState(0.05);
   const [quality, setQuality] = useState<'base' | 'turbo' | 'highest'>('base');
   const [withTexture, setWithTexture] = useState(true);
+  const [sizePreset, setSizePreset] = useState<string>('medium');
+  const [showCustomDims, setShowCustomDims] = useState(false);
+
+  // Handle size preset change
+  const handleSizePreset = (presetId: string) => {
+    setSizePreset(presetId);
+    const preset = SIZE_PRESETS.find(p => p.id === presetId);
+    if (preset && preset.dims) {
+      setWidth(preset.dims[0]);
+      setHeight(preset.dims[1]);
+      setDepth(preset.dims[2]);
+      setShowCustomDims(false);
+    } else {
+      setShowCustomDims(true);
+    }
+  };
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -216,51 +243,108 @@ export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
             </p>
           </div>
 
-          {/* Image Upload */}
+          {/* Image Upload - Mobile optimized */}
           <div className="mb-4">
             <label className="text-xs font-medium text-slate-300 mb-1 block">
               Object Photo
             </label>
-            <div
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => fileInputRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition
-                ${imagePreview 
-                  ? 'border-cyan-500/50 bg-cyan-500/5' 
-                  : 'border-slate-700/50 hover:border-slate-600/50 bg-slate-900/30'
-                }`}
-            >
-              {imagePreview ? (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="max-h-32 mx-auto rounded"
-                  />
-                  <div className="mt-2 text-xs text-slate-400">
-                    Click to change image
+
+            {/* Mobile: Show camera + gallery buttons */}
+            {isMobile && !imagePreview ? (
+              <div className="space-y-2">
+                {/* Camera capture button - large tap target */}
+                <button
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="w-full h-20 flex flex-col items-center justify-center gap-2
+                           bg-cyan-600/20 border-2 border-dashed border-cyan-500/50
+                           rounded-xl text-cyan-400 active:bg-cyan-600/30 transition touch-manipulation"
+                >
+                  <Camera className="w-8 h-8" />
+                  <span className="text-sm font-medium">Take Photo</span>
+                </button>
+
+                {/* Gallery button */}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-14 flex items-center justify-center gap-2
+                           bg-slate-800/50 border border-slate-700/50
+                           rounded-xl text-slate-300 active:bg-slate-700/50 transition touch-manipulation"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span className="text-sm">Choose from Gallery</span>
+                </button>
+
+                {/* Hidden camera input */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {/* Hidden gallery input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+            ) : (
+              /* Desktop or has preview */
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition
+                  ${imagePreview
+                    ? 'border-cyan-500/50 bg-cyan-500/5'
+                    : 'border-slate-700/50 hover:border-slate-600/50 bg-slate-900/30'
+                  }`}
+              >
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-h-40 md:max-h-32 mx-auto rounded"
+                    />
+                    <div className="mt-2 text-xs text-slate-400">
+                      {isMobile ? 'Tap to change' : 'Click to change image'}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-8 h-8 text-slate-500 mx-auto mb-2" />
-                  <div className="text-sm text-slate-400">
-                    Drop image or click to upload
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    PNG, JPG up to 10MB
-                  </div>
-                </>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+                    <div className="text-sm text-slate-400">
+                      Drop image or click to upload
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      PNG, JPG up to 10MB
+                    </div>
+                  </>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                {/* Camera input for desktop too (for devices with cameras) */}
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+            )}
           </div>
 
           {/* Object Config */}
@@ -279,53 +363,81 @@ export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
                 />
               </div>
 
-              {/* Dimensions */}
+              {/* Dimensions - Mobile uses presets, desktop shows inputs */}
               <div>
-                <label className="text-xs text-slate-400 mb-1 block flex items-center gap-1">
+                <label className="text-xs text-slate-400 mb-2 block flex items-center gap-1">
                   <Scale className="w-3 h-3" />
-                  Real-World Size (meters)
+                  Object Size
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <span className="text-xs text-slate-500">W</span>
-                    <input
-                      type="number"
-                      value={width}
-                      onChange={(e) => setWidth(parseFloat(e.target.value) || 0.1)}
-                      step={0.01}
-                      min={0.01}
-                      max={2}
-                      className="w-full px-2 py-1 text-sm bg-slate-800/50 border border-slate-700/50
-                               rounded text-white"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500">H</span>
-                    <input
-                      type="number"
-                      value={height}
-                      onChange={(e) => setHeight(parseFloat(e.target.value) || 0.1)}
-                      step={0.01}
-                      min={0.01}
-                      max={2}
-                      className="w-full px-2 py-1 text-sm bg-slate-800/50 border border-slate-700/50
-                               rounded text-white"
-                    />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-500">D</span>
-                    <input
-                      type="number"
-                      value={depth}
-                      onChange={(e) => setDepth(parseFloat(e.target.value) || 0.1)}
-                      step={0.01}
-                      min={0.01}
-                      max={2}
-                      className="w-full px-2 py-1 text-sm bg-slate-800/50 border border-slate-700/50
-                               rounded text-white"
-                    />
-                  </div>
+
+                {/* Size preset buttons */}
+                <div className="grid grid-cols-4 gap-1 mb-2">
+                  {SIZE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      onClick={() => handleSizePreset(preset.id)}
+                      className={`py-2 px-1 rounded-lg text-xs font-medium transition touch-manipulation
+                        ${sizePreset === preset.id
+                          ? 'bg-cyan-600 text-white'
+                          : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                        }`}
+                    >
+                      <span className="block text-base mb-0.5">{preset.icon}</span>
+                      {preset.label}
+                    </button>
+                  ))}
                 </div>
+
+                {/* Custom dimensions - shown when Custom selected or on desktop */}
+                {(showCustomDims || !isMobile) && (
+                  <div className={`grid gap-2 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                    <div className={isMobile ? 'flex items-center gap-2' : ''}>
+                      <span className={`text-xs text-slate-500 ${isMobile ? 'w-16' : 'block'}`}>
+                        Width (m)
+                      </span>
+                      <input
+                        type="number"
+                        value={width}
+                        onChange={(e) => setWidth(parseFloat(e.target.value) || 0.1)}
+                        step={0.01}
+                        min={0.01}
+                        max={2}
+                        className={`px-2 py-2 text-sm bg-slate-800/50 border border-slate-700/50
+                                 rounded text-white ${isMobile ? 'flex-1' : 'w-full'}`}
+                      />
+                    </div>
+                    <div className={isMobile ? 'flex items-center gap-2' : ''}>
+                      <span className={`text-xs text-slate-500 ${isMobile ? 'w-16' : 'block'}`}>
+                        Height (m)
+                      </span>
+                      <input
+                        type="number"
+                        value={height}
+                        onChange={(e) => setHeight(parseFloat(e.target.value) || 0.1)}
+                        step={0.01}
+                        min={0.01}
+                        max={2}
+                        className={`px-2 py-2 text-sm bg-slate-800/50 border border-slate-700/50
+                                 rounded text-white ${isMobile ? 'flex-1' : 'w-full'}`}
+                      />
+                    </div>
+                    <div className={isMobile ? 'flex items-center gap-2' : ''}>
+                      <span className={`text-xs text-slate-500 ${isMobile ? 'w-16' : 'block'}`}>
+                        Depth (m)
+                      </span>
+                      <input
+                        type="number"
+                        value={depth}
+                        onChange={(e) => setDepth(parseFloat(e.target.value) || 0.1)}
+                        step={0.01}
+                        min={0.01}
+                        max={2}
+                        className={`px-2 py-2 text-sm bg-slate-800/50 border border-slate-700/50
+                                 rounded text-white ${isMobile ? 'flex-1' : 'w-full'}`}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Quality */}
@@ -409,47 +521,49 @@ export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-3">
+              <div className={`mt-3 ${isMobile ? 'flex flex-col gap-2' : 'flex gap-2'}`}>
                 <a
                   href={generatedObject.meshUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1"
+                  className={isMobile ? 'w-full' : 'flex-1'}
                 >
-                  <Button variant="secondary" size="sm" className="w-full">
-                    <Download className="w-3 h-3 mr-1" />
+                  <Button variant="secondary" size="sm" className="w-full h-11">
+                    <Download className="w-4 h-4 mr-2" />
                     Download GLB
                   </Button>
                 </a>
                 <Button
                   variant="primary"
                   size="sm"
-                  className="flex-1 bg-cyan-600 hover:bg-cyan-500"
+                  className={`bg-cyan-600 hover:bg-cyan-500 h-11 ${isMobile ? 'w-full' : 'flex-1'}`}
                   onClick={() => onObjectGenerated?.(generatedObject)}
                 >
-                  <Play className="w-3 h-3 mr-1" />
+                  <Play className="w-4 h-4 mr-2" />
                   Add to Scene
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Generate Button */}
+          {/* Generate Button - larger on mobile for touch */}
           <Button
             variant="primary"
             size="sm"
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="w-full bg-cyan-600 hover:bg-cyan-500"
+            className={`w-full bg-cyan-600 hover:bg-cyan-500 touch-manipulation ${
+              isMobile ? 'h-12 text-base' : ''
+            }`}
           >
             {isGenerating ? (
               <>
-                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                <Loader2 className={`animate-spin ${isMobile ? 'w-5 h-5 mr-2' : 'w-3 h-3 mr-2'}`} />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="w-3 h-3 mr-2" />
+                <Sparkles className={isMobile ? 'w-5 h-5 mr-2' : 'w-3 h-3 mr-2'} />
                 Generate 3D Model
               </>
             )}

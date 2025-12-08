@@ -349,16 +349,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
         }}
       />
 
-      {/* Navigation */}
-      <nav className="relative flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-500/20 border-2 border-blue-500">
-            <Bot className="w-8 h-8 text-blue-400" />
+      {/* Navigation - Mobile responsive */}
+      <nav className="relative flex items-center justify-between px-4 md:px-8 py-4 md:py-6 max-w-7xl mx-auto">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="p-1.5 md:p-2 bg-blue-500/20 border-2 border-blue-500">
+            <Bot className="w-6 h-6 md:w-8 md:h-8 text-blue-400" />
           </div>
-          <span className="text-2xl font-black text-white tracking-tight">ROBOSIM</span>
+          <span className="text-xl md:text-2xl font-black text-white tracking-tight">ROBOSIM</span>
         </div>
-        <div className="flex items-center gap-6">
-          <a href="#features" className="text-slate-400 hover:text-white transition font-medium">
+        <div className="flex items-center gap-3 md:gap-6">
+          {/* Desktop nav links - hidden on mobile */}
+          <a href="#features" className="hidden md:inline text-slate-400 hover:text-white transition font-medium">
             Features
           </a>
           {onLearnMore && (
@@ -368,7 +369,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
                 e.preventDefault();
                 onLearnMore();
               }}
-              className="text-slate-400 hover:text-white transition font-medium"
+              className="hidden lg:inline text-slate-400 hover:text-white transition font-medium"
             >
               Learn More
             </a>
@@ -380,65 +381,65 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
                 e.preventDefault();
                 onInstructions();
               }}
-              className="text-slate-400 hover:text-white transition font-medium"
+              className="hidden lg:inline text-slate-400 hover:text-white transition font-medium"
             >
               How to Use
             </a>
           )}
           <button
             onClick={handleEnterApp}
-            className="bg-white text-black px-6 py-2.5 font-bold transition hover:bg-blue-400 hover:text-white border-2 border-white hover:border-blue-400"
+            className="bg-white text-black px-4 md:px-6 py-2 md:py-2.5 text-sm md:text-base font-bold transition hover:bg-blue-400 hover:text-white border-2 border-white hover:border-blue-400"
           >
             GET STARTED
           </button>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative px-8 pt-16 pb-12 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-400 px-4 py-2 text-sm mb-6 border border-blue-500/30 font-mono">
-              <Zap className="w-4 h-4" />
-              AI-NATIVE ROBOTICS SIMULATION
+      {/* Hero Section - Mobile responsive */}
+      <section className="relative px-4 md:px-8 pt-8 md:pt-16 pb-8 md:pb-12 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-400 px-3 md:px-4 py-2 text-xs md:text-sm mb-4 md:mb-6 border border-blue-500/30 font-mono">
+              <Zap className="w-3 h-3 md:w-4 md:h-4" />
+              AI-NATIVE ROBOTICS
             </div>
-            <h1 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 md:mb-6 leading-tight tracking-tight">
               Build Robot Skills
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400">
                 In Your Browser
               </span>
             </h1>
-            <p className="text-xl text-slate-400 mb-8 leading-relaxed">
+            <p className="text-base md:text-xl text-slate-400 mb-6 md:mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
               Simulate, program, and deploy robots with natural language control,
               pre-trained AI policies, and one-click hardware export.
             </p>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 md:gap-4">
               <button
                 onClick={handleEnterApp}
-                className="group flex items-center gap-3 bg-white text-black px-8 py-4 text-lg font-bold transition hover:bg-blue-400 hover:text-white border-2 border-white hover:border-blue-400"
+                className="group w-full sm:w-auto flex items-center justify-center gap-2 md:gap-3 bg-white text-black px-6 md:px-8 py-3 md:py-4 text-base md:text-lg font-bold transition hover:bg-blue-400 hover:text-white border-2 border-white hover:border-blue-400"
                 style={{ boxShadow: '4px 4px 0 rgba(59, 130, 246, 0.4)' }}
               >
-                <Play className="w-5 h-5" fill="currentColor" />
+                <Play className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" />
                 Start Building
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={onInstructions}
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition px-6 py-4 border-2 border-slate-700 hover:border-slate-500"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 text-slate-400 hover:text-white transition px-6 py-3 md:py-4 border-2 border-slate-700 hover:border-slate-500"
               >
-                <Monitor className="w-5 h-5" />
+                <Monitor className="w-4 h-4 md:w-5 md:h-5" />
                 Watch Demo
               </button>
             </div>
-            <div className="flex items-center gap-6 mt-8 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 md:gap-6 mt-6 md:mt-8 text-xs md:text-sm text-slate-500">
               <span className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
                 Free to use
               </span>
               <span className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
-                No install required
+                No install
               </span>
               <span className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-400" />
@@ -446,8 +447,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
               </span>
             </div>
           </div>
-          <div className="relative">
-            {/* Robot Preview */}
+          <div className="relative hidden md:block">
+            {/* Robot Preview - Hidden on small mobile */}
             <div
               className="relative cursor-pointer"
               onMouseEnter={() => setHoveredRobot('arm')}
@@ -455,7 +456,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
               onClick={handleEnterApp}
             >
               <div className={`
-                w-80 h-80 mx-auto flex items-center justify-center
+                w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 mx-auto flex items-center justify-center
                 bg-[#0a0f1a] border-2 border-blue-500/50
                 transition-all duration-300
                 ${hoveredRobot === 'arm' ? 'scale-105' : ''}
@@ -464,21 +465,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
                 boxShadow: hoveredRobot === 'arm' ? '8px 8px 0 rgba(59, 130, 246, 0.3)' : '4px 4px 0 rgba(59, 130, 246, 0.2)',
               }}
               >
-                <RobotArmSVG className="w-64 h-64" />
+                <RobotArmSVG className="w-40 h-40 md:w-52 md:h-52 lg:w-64 lg:h-64" />
               </div>
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-6 py-2 font-bold text-sm">
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 md:px-6 py-1.5 md:py-2 font-bold text-xs md:text-sm whitespace-nowrap">
                 SO-101 ROBOT ARM
               </div>
-              <div className="absolute -top-4 -right-4 bg-green-500 text-white px-3 py-1 text-xs font-bold">
-                AVAILABLE NOW
+              <div className="absolute -top-3 md:-top-4 -right-2 md:-right-4 bg-green-500 text-white px-2 md:px-3 py-1 text-xs font-bold">
+                AVAILABLE
               </div>
             </div>
-            {/* Floating badges */}
-            <div className="absolute top-8 -left-8 bg-slate-800 border border-slate-700 px-4 py-2 text-sm">
+            {/* Floating badges - hidden on tablet */}
+            <div className="hidden lg:block absolute top-8 -left-8 bg-slate-800 border border-slate-700 px-4 py-2 text-sm">
               <span className="text-purple-400 font-bold">6-DOF</span>
               <span className="text-slate-400 ml-2">Articulated</span>
             </div>
-            <div className="absolute bottom-20 -right-8 bg-slate-800 border border-slate-700 px-4 py-2 text-sm">
+            <div className="hidden lg:block absolute bottom-20 -right-8 bg-slate-800 border border-slate-700 px-4 py-2 text-sm">
               <span className="text-green-400 font-bold">LeRobot</span>
               <span className="text-slate-400 ml-2">Compatible</span>
             </div>
@@ -486,42 +487,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
         </div>
       </section>
 
-      {/* Key Features Highlight */}
-      <section className="relative px-8 py-12 max-w-7xl mx-auto">
-        <div className="grid grid-cols-6 gap-4 mb-4">
+      {/* Key Features Highlight - Mobile responsive */}
+      <section className="relative px-4 md:px-8 py-8 md:py-12 max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-3 md:mb-4">
           {[
-            { icon: <MessageSquare className="w-6 h-6" />, label: 'Chat Control', desc: 'Natural language', color: 'blue' },
-            { icon: <Mic className="w-6 h-6" />, label: 'Voice Control', desc: 'Hands-free', color: 'cyan' },
-            { icon: <Eye className="w-6 h-6" />, label: 'Vision AI', desc: 'Scene understanding', color: 'pink' },
-            { icon: <Code className="w-6 h-6" />, label: 'Code Copilot', desc: 'AI autocomplete', color: 'yellow' },
-            { icon: <Box className="w-6 h-6" />, label: 'Text to 3D', desc: 'Generate objects', color: 'emerald' },
-            { icon: <Camera className="w-6 h-6" />, label: 'Image to 3D', desc: 'Photo → 3D model', color: 'teal' },
+            { icon: <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />, label: 'Chat Control', desc: 'Natural language', color: 'blue' },
+            { icon: <Mic className="w-5 h-5 md:w-6 md:h-6" />, label: 'Voice Control', desc: 'Hands-free', color: 'cyan' },
+            { icon: <Eye className="w-5 h-5 md:w-6 md:h-6" />, label: 'Vision AI', desc: 'Scene understanding', color: 'pink' },
+            { icon: <Code className="w-5 h-5 md:w-6 md:h-6" />, label: 'Code Copilot', desc: 'AI autocomplete', color: 'yellow' },
+            { icon: <Box className="w-5 h-5 md:w-6 md:h-6" />, label: 'Text to 3D', desc: 'Generate objects', color: 'emerald' },
+            { icon: <Camera className="w-5 h-5 md:w-6 md:h-6" />, label: 'Image to 3D', desc: 'Photo → 3D', color: 'teal' },
           ].map((item) => (
             <div
               key={item.label}
-              className={`p-4 bg-slate-800/50 border-l-4 border-${item.color}-500 hover:bg-slate-800 transition`}
+              className={`p-3 md:p-4 bg-slate-800/50 border-l-4 border-${item.color}-500 hover:bg-slate-800 transition`}
             >
-              <div className={`text-${item.color}-400 mb-2`}>{item.icon}</div>
-              <div className="text-white font-bold">{item.label}</div>
-              <div className="text-slate-500 text-sm">{item.desc}</div>
+              <div className={`text-${item.color}-400 mb-1 md:mb-2`}>{item.icon}</div>
+              <div className="text-white font-bold text-sm md:text-base">{item.label}</div>
+              <div className="text-slate-500 text-xs md:text-sm hidden sm:block">{item.desc}</div>
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
           {[
-            { icon: <Wand2 className="w-6 h-6" />, label: 'Auto-Generate', desc: '100+ episodes', color: 'lime' },
-            { icon: <GraduationCap className="w-6 h-6" />, label: 'Challenges', desc: 'Learn by doing', color: 'rose' },
-            { icon: <Upload className="w-6 h-6" />, label: 'Hub Upload', desc: 'Direct publish', color: 'sky' },
-            { icon: <Layers className="w-6 h-6" />, label: 'Augmentation', desc: '10x datasets', color: 'indigo' },
-            { icon: <Palette className="w-6 h-6" />, label: 'Randomization', desc: 'Sim-to-real', color: 'violet' },
+            { icon: <Wand2 className="w-5 h-5 md:w-6 md:h-6" />, label: 'Auto-Generate', desc: '100+ episodes', color: 'lime' },
+            { icon: <GraduationCap className="w-5 h-5 md:w-6 md:h-6" />, label: 'Challenges', desc: 'Learn by doing', color: 'rose' },
+            { icon: <Upload className="w-5 h-5 md:w-6 md:h-6" />, label: 'Hub Upload', desc: 'Direct publish', color: 'sky' },
+            { icon: <Layers className="w-5 h-5 md:w-6 md:h-6" />, label: 'Augmentation', desc: '10x datasets', color: 'indigo' },
+            { icon: <Palette className="w-5 h-5 md:w-6 md:h-6" />, label: 'Randomization', desc: 'Sim-to-real', color: 'violet' },
           ].map((item) => (
             <div
               key={item.label}
-              className={`p-4 bg-slate-800/50 border-l-4 border-${item.color}-500 hover:bg-slate-800 transition`}
+              className={`p-3 md:p-4 bg-slate-800/50 border-l-4 border-${item.color}-500 hover:bg-slate-800 transition`}
             >
-              <div className={`text-${item.color}-400 mb-2`}>{item.icon}</div>
-              <div className="text-white font-bold">{item.label}</div>
-              <div className="text-slate-500 text-sm">{item.desc}</div>
+              <div className={`text-${item.color}-400 mb-1 md:mb-2`}>{item.icon}</div>
+              <div className="text-white font-bold text-sm md:text-base">{item.label}</div>
+              <div className="text-slate-500 text-xs md:text-sm hidden sm:block">{item.desc}</div>
             </div>
           ))}
         </div>
@@ -657,42 +658,41 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
         </p>
       </section>
 
-      {/* Footer */}
-      <footer className="relative px-8 py-12 border-t-2 border-slate-800">
+      {/* Footer - Mobile responsive */}
+      <footer className="relative px-4 md:px-8 py-8 md:py-12 border-t-2 border-slate-800">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-4 gap-8 mb-12">
-            <div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 mb-8 md:mb-12">
+            <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-3 mb-4">
-                <Bot className="w-6 h-6 text-blue-400" />
-                <span className="text-xl font-bold text-white">ROBOSIM</span>
+                <Bot className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+                <span className="text-lg md:text-xl font-bold text-white">ROBOSIM</span>
               </div>
               <p className="text-slate-500 text-sm">
                 AI-native robotics simulation for education, research, and prototyping.
               </p>
             </div>
             <div>
-              <h4 className="font-bold text-white mb-4">Features</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
+              <h4 className="font-bold text-white mb-3 md:mb-4 text-sm md:text-base">Features</h4>
+              <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-slate-400">
                 <li className="hover:text-white cursor-pointer">AI Chat Control</li>
                 <li className="hover:text-white cursor-pointer">Voice Control</li>
                 <li className="hover:text-white cursor-pointer">Vision-Language AI</li>
                 <li className="hover:text-white cursor-pointer">Image to 3D (CSM)</li>
-                <li className="hover:text-white cursor-pointer">Auto-Episode Generator</li>
-                <li className="hover:text-white cursor-pointer">Guided Challenges</li>
-                <li className="hover:text-white cursor-pointer">HuggingFace Upload</li>
-                <li className="hover:text-white cursor-pointer">Dataset Augmentation</li>
+                <li className="hidden md:block hover:text-white cursor-pointer">Auto-Episode Generator</li>
+                <li className="hidden md:block hover:text-white cursor-pointer">Guided Challenges</li>
+                <li className="hidden md:block hover:text-white cursor-pointer">HuggingFace Upload</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-bold text-white mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
+              <h4 className="font-bold text-white mb-3 md:mb-4 text-sm md:text-base">Resources</h4>
+              <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-slate-400">
                 <li className="hover:text-white cursor-pointer">Documentation</li>
                 <li className="hover:text-white cursor-pointer">API Reference</li>
                 <li className="hover:text-white cursor-pointer">Tutorials</li>
                 <li className="hover:text-white cursor-pointer">GitHub</li>
               </ul>
             </div>
-            <div>
+            <div className="hidden md:block">
               <h4 className="font-bold text-white mb-4">Integrations</h4>
               <ul className="space-y-2 text-sm text-slate-400">
                 <li className="flex items-center gap-2">
@@ -718,7 +718,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLearnMore, onInstruc
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-slate-800 flex items-center justify-between text-sm text-slate-600">
+          <div className="pt-6 md:pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-2 text-xs md:text-sm text-slate-600">
             <span>Built for learning robotics</span>
             <span>Open source on GitHub</span>
           </div>

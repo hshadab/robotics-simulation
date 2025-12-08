@@ -5,11 +5,13 @@ import { JointControls, ShareButton, ConsolidatedToolsPanel } from '../controls'
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';
 import { ApiKeySettings } from '../settings/ApiKeySettings';
 import { FirstRunModal, useFirstRun } from '../onboarding/FirstRunModal';
-import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, Brain, Database, Mic, Eye, Box, Sparkles, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, Brain, Database, Mic, Eye, Box, Sparkles, FileText, Clock, CheckCircle, AlertCircle, Menu, X, MessageSquare, Wrench } from 'lucide-react';
 import { Button, Select } from '../common';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { ROBOT_PROFILES } from '../../config/robots';
+import { useIsMobile, useIsTablet } from '../../hooks/useMediaQuery';
+import { MobileDrawer, MobileNav, type MobileTab } from '../mobile';
 
 type Tab = 'simulate' | 'code' | 'learn' | 'docs';
 
@@ -17,6 +19,7 @@ export const MainLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('simulate');
   const [showSettings, setShowSettings] = useState(false);
   const [triggerTutorial, setTriggerTutorial] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const {
     selectedRobotId,
@@ -27,6 +30,8 @@ export const MainLayout: React.FC = () => {
     isAnimating,
   } = useAppStore();
   const { showModal, markComplete } = useFirstRun();
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
 
   const handleStartTutorial = useCallback(() => {
     markComplete();
@@ -66,41 +71,58 @@ export const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex flex-col text-base">
-      {/* Unified Header */}
-      <header className="h-12 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-4">
-        {/* Left: Logo + Tabs */}
-        <div className="flex items-center gap-4">
+      {/* Unified Header - Responsive */}
+      <header className="h-12 bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-2 md:px-4">
+        {/* Left: Logo + Tabs (tabs hidden on mobile) */}
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Mobile menu button */}
+          {isMobile && (
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 -ml-1 rounded-lg hover:bg-slate-700/50 transition"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5 text-slate-300" />
+              ) : (
+                <Menu className="w-5 h-5 text-slate-300" />
+              )}
+            </button>
+          )}
+
           <div className="flex items-center gap-2">
-            <Bot className="w-6 h-6 text-blue-400" />
-            <span className="text-lg font-bold text-white">RoboSim</span>
+            <Bot className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+            <span className="text-base md:text-lg font-bold text-white">RoboSim</span>
           </div>
 
-          <div className="flex items-center gap-0.5 bg-slate-900/50 rounded-md p-0.5 ml-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition ${
-                  activeTab === tab.id
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {/* Tabs - hidden on mobile */}
+          {!isMobile && (
+            <div className="flex items-center gap-0.5 bg-slate-900/50 rounded-md p-0.5 ml-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                  }`}
+                >
+                  {tab.icon}
+                  {!isTablet && tab.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Center: Robot Selector + Run/Stop (only for simulate/code tabs) */}
-        {(activeTab === 'simulate' || activeTab === 'code') && (
-          <div className="flex items-center gap-3">
+        {/* Center: Robot Selector + Run/Stop (only for simulate/code tabs) - hidden on mobile */}
+        {!isMobile && (activeTab === 'simulate' || activeTab === 'code') && (
+          <div className="flex items-center gap-2 md:gap-3">
             <Select
               options={robotOptions}
               value={selectedRobotId}
               onChange={handleRobotChange}
-              className="w-48"
+              className="w-32 md:w-48"
             />
             {simulation.status === 'running' ? (
               <Button
@@ -110,7 +132,7 @@ export const MainLayout: React.FC = () => {
                 onClick={handleStop}
                 disabled={isAnimating}
               >
-                Stop
+                {!isTablet && 'Stop'}
               </Button>
             ) : (
               <Button
@@ -120,39 +142,91 @@ export const MainLayout: React.FC = () => {
                 onClick={handleRun}
                 disabled={isAnimating}
               >
-                Run
+                {!isTablet && 'Run'}
               </Button>
             )}
           </div>
         )}
 
-        {/* Right: Actions + User */}
-        <div className="flex items-center gap-3">
-          {(activeTab === 'simulate' || activeTab === 'code') && (
+        {/* Right: Actions + User - simplified on mobile */}
+        <div className="flex items-center gap-1 md:gap-3">
+          {!isMobile && (activeTab === 'simulate' || activeTab === 'code') && (
             <>
               <ShareButton />
-              <Button variant="ghost" size="sm" leftIcon={<Save className="w-4 h-4" />}>
-                Save
-              </Button>
+              {!isTablet && (
+                <Button variant="ghost" size="sm" leftIcon={<Save className="w-4 h-4" />}>
+                  Save
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
                 <Settings className="w-4 h-4" />
               </Button>
               <div className="w-px h-6 bg-slate-700" />
             </>
           )}
-          <span className="text-sm text-slate-400">
-            {user?.name || user?.email}
-          </span>
-          <button
-            onClick={logout}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 transition text-sm px-2 py-1 hover:bg-red-500/10 rounded"
-            title="Log out"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
+          {isMobile ? (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 rounded-lg hover:bg-slate-700/50 transition"
+            >
+              <Settings className="w-5 h-5 text-slate-400" />
+            </button>
+          ) : (
+            <>
+              <span className="text-sm text-slate-400 hidden md:inline">
+                {user?.name || user?.email}
+              </span>
+              <button
+                onClick={logout}
+                className="flex items-center gap-1.5 text-slate-400 hover:text-red-400 transition text-sm px-2 py-1 hover:bg-red-500/10 rounded"
+                title="Log out"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            </>
+          )}
         </div>
       </header>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobile && mobileMenuOpen && (
+        <div className="absolute top-12 left-0 right-0 z-50 bg-slate-800 border-b border-slate-700 shadow-lg">
+          <div className="p-2 space-y-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-300 hover:bg-slate-700/50'
+                }`}
+              >
+                {tab.icon}
+                <span className="font-medium">{tab.label}</span>
+              </button>
+            ))}
+            <div className="border-t border-slate-700 my-2" />
+            <div className="px-4 py-2 text-sm text-slate-400">
+              {user?.name || user?.email}
+            </div>
+            <button
+              onClick={() => {
+                logout();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-red-500/10 transition"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
@@ -183,6 +257,11 @@ interface SimulateTabProps {
 const SimulateTab: React.FC<SimulateTabProps> = ({ openTutorial }) => {
   const { setControlMode, setShowWorkspace } = useAppStore();
   const [showToolsPanel, setShowToolsPanel] = useState(true);
+  const [mobileTab, setMobileTab] = useState<MobileTab>('viewport');
+  const [showChatDrawer, setShowChatDrawer] = useState(false);
+  const [showToolsDrawer, setShowToolsDrawer] = useState(false);
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
 
   // When openTutorial triggers, we could emit an event or set a global state
   // For now, the TutorialPanel in ConsolidatedToolsPanel will handle its own visibility
@@ -190,9 +269,156 @@ const SimulateTab: React.FC<SimulateTabProps> = ({ openTutorial }) => {
     if (openTutorial) {
       // Ensure tools panel is visible when tutorial is triggered
       setShowToolsPanel(true);
+      if (isMobile) {
+        setShowToolsDrawer(true);
+        setMobileTab('tools');
+      }
     }
-  }, [openTutorial]);
+  }, [openTutorial, isMobile]);
 
+  // Handle mobile tab changes
+  const handleMobileTabChange = (tab: MobileTab) => {
+    setMobileTab(tab);
+    if (tab === 'chat') {
+      setShowChatDrawer(true);
+      setShowToolsDrawer(false);
+    } else if (tab === 'tools') {
+      setShowToolsDrawer(true);
+      setShowChatDrawer(false);
+    } else if (tab === 'camera') {
+      // Open Image-to-3D panel directly
+      setShowToolsDrawer(true);
+      setShowChatDrawer(false);
+    } else {
+      setShowChatDrawer(false);
+      setShowToolsDrawer(false);
+    }
+  };
+
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <div className="flex-1 flex flex-col" style={{ height: 'calc(100vh - 48px)' }}>
+        {/* 3D Viewport - Full width */}
+        <div className="flex-1 min-h-0">
+          <SimulationViewport />
+        </div>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileNav
+          activeTab={mobileTab}
+          onTabChange={handleMobileTabChange}
+          showCamera={true}
+        />
+
+        {/* Chat Drawer */}
+        <MobileDrawer
+          isOpen={showChatDrawer}
+          onClose={() => {
+            setShowChatDrawer(false);
+            setMobileTab('viewport');
+          }}
+          title="AI Chat"
+          defaultSnap="half"
+        >
+          <ChatPanel />
+        </MobileDrawer>
+
+        {/* Tools Drawer */}
+        <MobileDrawer
+          isOpen={showToolsDrawer}
+          onClose={() => {
+            setShowToolsDrawer(false);
+            setMobileTab('viewport');
+          }}
+          title={mobileTab === 'camera' ? 'Image to 3D' : 'Tools'}
+          defaultSnap="half"
+        >
+          <ConsolidatedToolsPanel
+            onModeChange={setControlMode}
+            onShowWorkspace={setShowWorkspace}
+          />
+        </MobileDrawer>
+
+        {/* Safe area padding for bottom nav */}
+        <div className="h-14" />
+      </div>
+    );
+  }
+
+  // Tablet Layout - Single collapsible sidebar
+  if (isTablet) {
+    return (
+      <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
+        <div className="h-full flex">
+          {/* Center: 3D Simulation */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 min-h-0">
+              <SimulationViewport />
+            </div>
+          </div>
+
+          {/* Right: Toggle between Chat and Tools */}
+          <div className={`flex-shrink-0 border-l border-slate-700/50 transition-all duration-300 ${showToolsPanel ? 'w-72' : 'w-12'}`}>
+            {showToolsPanel ? (
+              <div className="h-full flex flex-col">
+                {/* Toggle Header */}
+                <div className="flex items-center justify-between px-2 py-2 border-b border-slate-700/50 bg-slate-800/50">
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setMobileTab('chat')}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                        mobileTab === 'chat' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setMobileTab('tools')}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                        mobileTab === 'tools' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <Wrench className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setShowToolsPanel(false)}
+                    className="p-1 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded transition"
+                  >
+                    <PanelRightClose className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-hidden">
+                  {mobileTab === 'chat' ? (
+                    <ChatPanel />
+                  ) : (
+                    <ConsolidatedToolsPanel
+                      onModeChange={setControlMode}
+                      onShowWorkspace={setShowWorkspace}
+                    />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center pt-2">
+                <button
+                  onClick={() => setShowToolsPanel(true)}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded transition"
+                >
+                  <PanelRightOpen className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Layout - Full 3-panel
   return (
     <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
       <div className="h-full flex">
