@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MainLayout } from './components/layout';
-import { LandingPage, LearnMorePage, InstructionsPage, ComparisonPage, LoginModal } from './components/pages';
+import { LandingPage, LearnMorePage, HowToUsePage, ComparisonPage, LoginModal } from './components/pages';
 import { useLoadSharedState } from './hooks/useLoadSharedState';
 import { useAuthStore } from './stores/useAuthStore';
 
@@ -56,7 +56,7 @@ function App() {
     }
     if (marketingPage === 'how-to-use') {
       return (
-        <InstructionsPage
+        <HowToUsePage
           onBack={() => navigateTo('landing')}
           onGetStarted={handleGetStarted}
         />
