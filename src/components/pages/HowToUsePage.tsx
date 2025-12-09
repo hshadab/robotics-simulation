@@ -1186,21 +1186,75 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
             {/* AI Features */}
             {activeSection === 'ai' && (
               <div className="space-y-8">
+                {/* Overview Panel */}
                 <div className="bg-slate-900/50 border-2 border-pink-500/30 p-6">
                   <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
                     <Brain className="w-6 h-6 text-pink-400" />
-                    AI-Powered Features
+                    AI Features Overview
                   </h2>
                   <p className="text-slate-400 mb-4">
-                    RoboSim integrates advanced AI capabilities throughout the platform. Control robots with natural language,
-                    understand scenes visually, get coding assistance, and generate environments automatically.
+                    RoboSim integrates 12 AI capabilities across control, vision, generation, and training.
+                    Control robots with natural language, understand scenes visually, generate 3D content, and create training datasets.
                   </p>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-slate-800/50 p-3 border border-blue-500/30 text-center">
+                      <div className="text-2xl font-black text-blue-400">4</div>
+                      <div className="text-xs text-slate-400">Control Modes</div>
+                      <div className="text-xs text-slate-500 mt-1">Chat, Voice, Copilot, Hand</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-3 border border-purple-500/30 text-center">
+                      <div className="text-2xl font-black text-purple-400">3</div>
+                      <div className="text-xs text-slate-400">Vision Models</div>
+                      <div className="text-xs text-slate-500 mt-1">Claude, DETR, Blob</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-3 border border-emerald-500/30 text-center">
+                      <div className="text-2xl font-black text-emerald-400">3</div>
+                      <div className="text-xs text-slate-400">Generation Tools</div>
+                      <div className="text-xs text-slate-500 mt-1">Text, Image, Environment</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-3 border border-amber-500/30 text-center">
+                      <div className="text-2xl font-black text-amber-400">2</div>
+                      <div className="text-xs text-slate-400">Training Systems</div>
+                      <div className="text-xs text-slate-500 mt-1">LLM→Physics, Policies</div>
+                    </div>
+                  </div>
+
+                  {/* Quick Links */}
+                  <div className="flex gap-2 flex-wrap mb-4">
+                    <a href="#ai-control" className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500/20 border border-blue-500 text-blue-400 hover:bg-blue-500/30 transition">
+                      <Zap className="w-4 h-4" />
+                      Control
+                    </a>
+                    <a href="#ai-vision" className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-500/20 border border-purple-500 text-purple-400 hover:bg-purple-500/30 transition">
+                      <Eye className="w-4 h-4" />
+                      Vision
+                    </a>
+                    <a href="#ai-generation" className="flex items-center gap-2 px-3 py-1.5 text-sm bg-emerald-500/20 border border-emerald-500 text-emerald-400 hover:bg-emerald-500/30 transition">
+                      <Box className="w-4 h-4" />
+                      Generation
+                    </a>
+                    <a href="#ai-training" className="flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-500/20 border border-amber-500 text-amber-400 hover:bg-amber-500/30 transition">
+                      <Database className="w-4 h-4" />
+                      Training
+                    </a>
+                  </div>
+
                   <div className="bg-slate-800/50 p-4 border-l-4 border-pink-500">
                     <p className="text-sm text-slate-300">
                       <strong>API Keys:</strong> Some AI features require API keys. Enter your Claude API key in Chat settings
                       and/or Gemini API key in AI Environment settings to unlock full capabilities.
                     </p>
                   </div>
+                </div>
+
+                {/* AI Control Section Header */}
+                <div id="ai-control" className="border-b border-blue-500/30 pb-2">
+                  <h3 className="text-lg font-bold text-blue-400 flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    AI Control & Interaction
+                  </h3>
                 </div>
 
                 {/* Chat Panel */}
@@ -1335,6 +1389,14 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
                   </div>
                 </div>
 
+                {/* AI Vision Section Header */}
+                <div id="ai-vision" className="border-b border-purple-500/30 pb-2">
+                  <h3 className="text-lg font-bold text-purple-400 flex items-center gap-2">
+                    <Eye className="w-5 h-5" />
+                    AI Vision & Understanding
+                  </h3>
+                </div>
+
                 {/* Vision Analysis */}
                 <div className="bg-slate-900/50 border-2 border-cyan-500/30 p-6">
                   <h3 className="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-3">
@@ -1430,6 +1492,14 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
                   </div>
                 </div>
 
+                {/* AI Generation Section Header */}
+                <div id="ai-generation" className="border-b border-emerald-500/30 pb-2">
+                  <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                    <Box className="w-5 h-5" />
+                    AI Content Generation
+                  </h3>
+                </div>
+
                 {/* Text to 3D */}
                 <div className="bg-slate-900/50 border-2 border-green-500/30 p-6">
                   <h3 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-3">
@@ -1521,6 +1591,14 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
                       <span className="px-2 py-1 bg-violet-500/20 text-violet-300 text-xs rounded">ONNX</span>
                     </div>
                   </div>
+                </div>
+
+                {/* AI Training Section Header */}
+                <div id="ai-training" className="border-b border-amber-500/30 pb-2">
+                  <h3 className="text-lg font-bold text-amber-400 flex items-center gap-2">
+                    <Database className="w-5 h-5" />
+                    AI Training & Data Generation
+                  </h3>
                 </div>
 
                 {/* LLM → Physics Recording */}
