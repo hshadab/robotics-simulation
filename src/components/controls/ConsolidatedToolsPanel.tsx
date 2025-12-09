@@ -31,6 +31,7 @@ import {
   Layers,
   GraduationCap,
   Upload,
+  Box,
 } from 'lucide-react';
 
 // Import all panel components
@@ -66,6 +67,7 @@ import { SaveLoadPanel } from './SaveLoadPanel';
 import { ChallengePanel } from './ChallengePanel';
 import { HuggingFaceUploadPanel } from './HuggingFaceUploadPanel';
 import { ImageTo3DPanel } from './ImageTo3DPanel';
+import { ObjectLibraryPanel } from './ObjectLibraryPanel';
 import { SensorPanel } from '../simulation/SensorPanel';
 import { useAppStore } from '../../stores/useAppStore';
 
@@ -202,6 +204,11 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
             {/* Environment */}
             <CollapsibleSection title="Environment" icon={<Gamepad2 className="w-4 h-4" />}>
               <EnvironmentSelector />
+            </CollapsibleSection>
+
+            {/* Object Library */}
+            <CollapsibleSection title="Object Library" icon={<Box className="w-4 h-4" />} badge="NEW">
+              <ObjectLibraryPanel />
             </CollapsibleSection>
 
             {/* Task Templates */}

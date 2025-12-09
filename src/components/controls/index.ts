@@ -36,3 +36,5 @@ export { HuggingFaceUploadPanel } from './HuggingFaceUploadPanel';
 export { ImageTo3DPanel } from './ImageTo3DPanel';
 // Consolidated Panel
 export { ConsolidatedToolsPanel } from './ConsolidatedToolsPanel';
+// Object Library
+export { ObjectLibraryPanel } from './ObjectLibraryPanel';
