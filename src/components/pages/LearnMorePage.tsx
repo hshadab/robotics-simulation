@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import {
   Bot, ArrowLeft, Code, Cpu, Brain, Camera, Database, Download,
   Gamepad2, Layers, Zap, Smartphone, Terminal, BookOpen, Settings, Hand,
-  Target, Upload, BarChart3, ChevronRight
+  Target, Upload, BarChart3, ChevronRight, MessageSquare, Mic, Eye,
+  Box, Wand2, Languages, Sparkles, Image
 } from 'lucide-react';
 
 interface LearnMorePageProps {
@@ -672,36 +673,307 @@ export const LearnMorePage: React.FC<LearnMorePageProps> = ({ onBack, onGetStart
       </section>
 
       {/* AI Features */}
-      <section className="relative px-8 py-12 max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-          <Brain className="w-6 h-6 text-pink-400" />
-          AI-Powered Features
-        </h2>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-slate-900/50 border border-pink-500/30 p-6">
-            <h3 className="text-lg font-bold text-pink-400 mb-3">Claude AI Integration</h3>
-            <p className="text-slate-400 text-sm mb-4">
-              Connect your Anthropic API key to use Claude for natural language robot programming.
-              Describe tasks in plain English and the AI converts them to executable robot commands.
-            </p>
-            <ul className="text-sm text-slate-500 space-y-1">
-              <li>• "Move arm to pick up the cube"</li>
-              <li>• "Navigate to waypoint A avoiding obstacles"</li>
-              <li>• "Wave hello then point at the camera"</li>
-            </ul>
+      <section className="relative px-8 py-16 bg-gradient-to-b from-slate-900/50 to-transparent max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-black text-white mb-4 flex items-center justify-center gap-3">
+            <Brain className="w-8 h-8 text-pink-400" />
+            AI-Powered Features
+          </h2>
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+            12 integrated AI capabilities spanning control, vision, generation, and training
+          </p>
+        </div>
+
+        {/* Overview Panel */}
+        <div className="bg-slate-800/50 border-2 border-pink-500/30 p-6 mb-8">
+          <h3 className="text-lg font-bold text-pink-400 mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5" />
+            AI Features Overview
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="text-center p-3 bg-slate-900/50 rounded">
+              <div className="text-2xl font-black text-blue-400">4</div>
+              <div className="text-slate-400">Control Modes</div>
+            </div>
+            <div className="text-center p-3 bg-slate-900/50 rounded">
+              <div className="text-2xl font-black text-purple-400">3</div>
+              <div className="text-slate-400">Vision Models</div>
+            </div>
+            <div className="text-center p-3 bg-slate-900/50 rounded">
+              <div className="text-2xl font-black text-emerald-400">3</div>
+              <div className="text-slate-400">Generation Tools</div>
+            </div>
+            <div className="text-center p-3 bg-slate-900/50 rounded">
+              <div className="text-2xl font-black text-amber-400">2</div>
+              <div className="text-slate-400">Training Systems</div>
+            </div>
           </div>
-          <div className="bg-slate-900/50 border border-pink-500/30 p-6">
-            <h3 className="text-lg font-bold text-pink-400 mb-3">Computer Vision (Transformers.js)</h3>
-            <p className="text-slate-400 text-sm mb-4">
-              Browser-based ML models for object detection, image classification, and depth estimation.
-              No server required - all processing happens locally.
-            </p>
-            <ul className="text-sm text-slate-500 space-y-1">
-              <li>• DETR object detection</li>
-              <li>• ViT image classification</li>
-              <li>• CLIP zero-shot classification</li>
-              <li>• DPT depth estimation</li>
-            </ul>
+        </div>
+
+        {/* AI Control Section */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-blue-400" />
+            AI Control & Interaction
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-slate-900/50 border border-blue-500/30 p-5 hover:border-blue-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <MessageSquare className="w-5 h-5 text-blue-400" />
+                <h4 className="font-bold text-white">AI Chat Control</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Natural language robot control with Claude AI. Describe tasks in plain English and watch them execute.
+              </p>
+              <div className="bg-slate-950/50 p-2 rounded text-xs text-slate-500 font-mono">
+                "Pick up the red block and place it on the blue one"
+              </div>
+            </div>
+            <div className="bg-slate-900/50 border border-cyan-500/30 p-5 hover:border-cyan-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Mic className="w-5 h-5 text-cyan-400" />
+                <h4 className="font-bold text-white">Voice Control</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Hands-free robot operation with Web Speech API. Wake word support and voice feedback.
+              </p>
+              <div className="bg-slate-950/50 p-2 rounded text-xs text-slate-500 font-mono">
+                "Hey Robot, wave hello"
+              </div>
+            </div>
+            <div className="bg-slate-900/50 border border-yellow-500/30 p-5 hover:border-yellow-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Code className="w-5 h-5 text-yellow-400" />
+                <h4 className="font-bold text-white">Code Copilot</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                AI-powered code editor with smart completions, comment-to-code generation, and error fixing.
+              </p>
+              <div className="bg-slate-950/50 p-2 rounded text-xs text-slate-500 font-mono">
+                // wave hello → Ctrl+Shift+G generates code
+              </div>
+            </div>
+            <div className="bg-slate-900/50 border border-pink-500/30 p-5 hover:border-pink-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Hand className="w-5 h-5 text-pink-400" />
+                <h4 className="font-bold text-white">Hand Tracking</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                MediaPipe-powered gesture control. Move your hand to control the robot arm in real-time.
+              </p>
+              <div className="bg-slate-950/50 p-2 rounded text-xs text-slate-500 font-mono">
+                Pinch gesture → Close gripper
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Vision Section */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <Eye className="w-5 h-5 text-purple-400" />
+            AI Vision & Understanding
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-slate-900/50 border border-purple-500/30 p-5 hover:border-purple-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Eye className="w-5 h-5 text-purple-400" />
+                <h4 className="font-bold text-white">Vision Analysis</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Ask questions about the scene. Uses DETR for object detection + Claude Vision for understanding.
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• Object detection (DETR)</li>
+                <li>• Scene classification</li>
+                <li>• Spatial queries</li>
+              </ul>
+            </div>
+            <div className="bg-slate-900/50 border border-purple-500/30 p-5 hover:border-purple-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Camera className="w-5 h-5 text-purple-400" />
+                <h4 className="font-bold text-white">Blob Detection</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Real-time color-based object tracking. HSV filtering with configurable thresholds.
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• Color presets (RGB, etc.)</li>
+                <li>• Bounding boxes</li>
+                <li>• Centroid tracking</li>
+              </ul>
+            </div>
+            <div className="bg-slate-900/50 border border-purple-500/30 p-5 hover:border-purple-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Brain className="w-5 h-5 text-purple-400" />
+                <h4 className="font-bold text-white">Transformers.js</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Browser-based ML models. No GPU required - all inference runs locally.
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• ViT classification</li>
+                <li>• CLIP zero-shot</li>
+                <li>• DPT depth estimation</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Generation Section */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <Box className="w-5 h-5 text-emerald-400" />
+            AI Content Generation
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-slate-900/50 border border-emerald-500/30 p-5 hover:border-emerald-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Box className="w-5 h-5 text-emerald-400" />
+                <h4 className="font-bold text-white">Text to 3D</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Generate 3D objects from descriptions. Procedural meshes with optional AI textures.
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• "red apple" → 3D model</li>
+                <li>• Realistic/Cartoon styles</li>
+                <li>• Physics-enabled objects</li>
+              </ul>
+            </div>
+            <div className="bg-slate-900/50 border border-emerald-500/30 p-5 hover:border-emerald-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Image className="w-5 h-5 text-emerald-400" />
+                <h4 className="font-bold text-white">Image to 3D (CSM)</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Upload real object photos → CSM.ai generates accurate 3D models with auto grasp points.
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• Photo → 3D mesh</li>
+                <li>• Auto grasp estimation</li>
+                <li>• Training task generation</li>
+              </ul>
+            </div>
+            <div className="bg-slate-900/50 border border-emerald-500/30 p-5 hover:border-emerald-500/60 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Wand2 className="w-5 h-5 text-emerald-400" />
+                <h4 className="font-bold text-white">AI Environments</h4>
+              </div>
+              <p className="text-slate-400 text-sm mb-3">
+                Generate scene backdrops and textures with Gemini AI. Warehouse, garden, lab presets.
+              </p>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• Background generation</li>
+                <li>• Floor/wall textures</li>
+                <li>• Object textures</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Training Section */}
+        <div className="mb-8">
+          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <Languages className="w-5 h-5 text-amber-400" />
+            AI Training & Data Generation
+            <span className="text-xs px-2 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">NEW</span>
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-slate-900/50 border-2 border-fuchsia-500/50 p-6 hover:border-fuchsia-500/80 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Wand2 className="w-6 h-6 text-fuchsia-400" />
+                <div>
+                  <h4 className="font-bold text-white text-lg">LLM → Physics Recording</h4>
+                  <span className="text-xs text-fuchsia-400 font-medium">Language-Conditioned Data Generation</span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-4">
+                Type natural language instructions → AI generates motion plan → Physics simulation executes with real Rapier physics →
+                Camera captures frames at 30 FPS → Export language-conditioned datasets for RT-1/OpenVLA training.
+              </p>
+              <div className="bg-slate-950/50 p-3 rounded mb-4">
+                <div className="text-xs text-fuchsia-400 mb-2">Example Workflow:</div>
+                <div className="font-mono text-xs text-slate-300 space-y-1">
+                  <div>1. "Stack the red block on blue"</div>
+                  <div>2. AI parses → motion plan</div>
+                  <div>3. Physics sim executes</div>
+                  <div>4. Camera records frames</div>
+                  <div>5. Export with language</div>
+                </div>
+              </div>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• Natural language instructions embedded in metadata</li>
+                <li>• Real physics interactions (Rapier engine)</li>
+                <li>• Camera capture at 30 FPS</li>
+                <li>• LeRobot v3.0 format export</li>
+                <li>• Compatible with RT-1, OpenVLA, ACT</li>
+              </ul>
+            </div>
+            <div className="bg-slate-900/50 border-2 border-amber-500/50 p-6 hover:border-amber-500/80 transition">
+              <div className="flex items-center gap-3 mb-3">
+                <Languages className="w-6 h-6 text-amber-400" />
+                <div>
+                  <h4 className="font-bold text-white text-lg">Language-Conditioned Training</h4>
+                  <span className="text-xs text-amber-400 font-medium">Train Robots to Understand Commands</span>
+                </div>
+              </div>
+              <p className="text-slate-400 text-sm mb-4">
+                The holy grail of robot learning: robots that understand natural language. Record demonstrations with free-form instructions,
+                export to LeRobot format, and train policies that follow human commands.
+              </p>
+              <div className="bg-slate-950/50 p-3 rounded mb-4">
+                <div className="text-xs text-amber-400 mb-2">Supported Models:</div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded">RT-1</span>
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded">RT-2</span>
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded">OpenVLA</span>
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded">LeRobot ACT</span>
+                  <span className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded">Diffusion</span>
+                </div>
+              </div>
+              <ul className="text-xs text-slate-500 space-y-1">
+                <li>• Free-form instructions per episode</li>
+                <li>• Auto-episode generator (100+ episodes)</li>
+                <li>• Dataset augmentation (2-10x expansion)</li>
+                <li>• Direct HuggingFace Hub upload</li>
+                <li>• Object Library with YCB benchmark items</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Object Library Callout */}
+        <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 p-6 rounded-lg">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-purple-500/20 rounded">
+              <Box className="w-8 h-8 text-purple-400" />
+            </div>
+            <div className="flex-1">
+              <h4 className="text-lg font-bold text-white mb-2">Object Library for Manipulation Tasks</h4>
+              <p className="text-slate-400 text-sm mb-4">
+                34 physics-enabled objects including YCB benchmark items (standard robotics research objects).
+                7 scene presets for common manipulation tasks.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div className="bg-slate-900/50 p-2 rounded text-center">
+                  <div className="text-purple-400 font-bold">16</div>
+                  <div className="text-slate-500">Primitives</div>
+                </div>
+                <div className="bg-slate-900/50 p-2 rounded text-center">
+                  <div className="text-purple-400 font-bold">18</div>
+                  <div className="text-slate-500">YCB Objects</div>
+                </div>
+                <div className="bg-slate-900/50 p-2 rounded text-center">
+                  <div className="text-purple-400 font-bold">7</div>
+                  <div className="text-slate-500">Scene Presets</div>
+                </div>
+                <div className="bg-slate-900/50 p-2 rounded text-center">
+                  <div className="text-purple-400 font-bold">6</div>
+                  <div className="text-slate-500">Categories</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
