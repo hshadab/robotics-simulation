@@ -51,7 +51,7 @@ const RobotArmSVG: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 // Feature tabs configuration
-type FeatureTab = 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'image3d' | 'autogen' | 'challenges' | 'augment' | 'langlearn';
+type FeatureTab = 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'image3d' | 'autogen' | 'challenges' | 'augment' | 'langlearn' | 'objects' | 'llmphysics';
 
 const FEATURE_TABS: Array<{
   id: FeatureTab;
@@ -342,6 +342,46 @@ const FEATURE_TABS: Array<{
       'Export with language_instruction in metadata',
     ],
     color: 'amber',
+  },
+  {
+    id: 'objects',
+    label: 'Object Library',
+    icon: <Box className="w-5 h-5" />,
+    title: 'Physics Object Library',
+    description: 'Browse 34 physics-enabled objects including YCB benchmark items. Load scene presets for common manipulation tasks.',
+    benefits: [
+      '34 objects with realistic physics',
+      'YCB benchmark objects (robotics standard)',
+      '7 scene presets (stacking, sorting, pouring)',
+      'One-click scene setup for training',
+    ],
+    howTo: [
+      'Open Control tab → Object Library',
+      'Choose a Scene Preset like "Block Stacking"',
+      'Or browse categories and add individual objects',
+      'Objects appear in scene ready for manipulation',
+    ],
+    color: 'purple',
+  },
+  {
+    id: 'llmphysics',
+    label: 'LLM → Physics',
+    icon: <Wand2 className="w-5 h-5" />,
+    title: 'Natural Language to Training Data',
+    description: 'Type "Stack the red block on blue" and watch the robot execute in physics simulation while recording camera frames for training.',
+    benefits: [
+      'Natural language → motion plan → execution',
+      'Actual physics simulation with Rapier',
+      'Camera capture at 30 FPS during recording',
+      'Language-conditioned datasets for RT-1/OpenVLA',
+    ],
+    howTo: [
+      'Open Data tab → LLM → Physics panel',
+      'Type an instruction like "Pick up the red block"',
+      'Select a scene preset (e.g., Block Stacking)',
+      'Click Generate to record physics-based episodes',
+    ],
+    color: 'fuchsia',
   },
 ];
 

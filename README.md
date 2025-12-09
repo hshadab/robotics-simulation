@@ -255,7 +255,7 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 - **Configurable Multiplier** - 2x to 10x dataset expansion
 - **Quality Preservation** - Maintains trajectory smoothness
 
-### Auto-Episode Generator (NEW)
+### Auto-Episode Generator
 - **One-Click Generation** - Create 100+ episodes instantly
 - **Template-Based** - Uses parameterized task templates
 - **Randomized Parameters** - Each episode has unique variations
@@ -265,6 +265,26 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
   - LeRobot Format: Direct HuggingFace compatibility
   - JSON Export: For custom training pipelines
 - **Estimated Output** - Preview episode count before generating
+
+### Object Library (NEW)
+- **34 Physics Objects** - Cubes, balls, cylinders with realistic physics
+- **YCB Benchmark Objects** - Standard robotics research objects (soup cans, boxes, tools)
+- **6 Object Categories** - Containers, Food, Tools, Toys, Kitchen, Office
+- **7 Scene Presets** - Pre-configured manipulation scenarios:
+  - Block Stacking, Multi-Block Stack, Cup Pouring
+  - Color Sorting, Fruit Pick & Place, Can Lineup, Office Desk
+- **One-Click Setup** - Load complete scenes instantly
+- **Add/Remove Objects** - Build custom manipulation environments
+
+### LLM → Physics Recording (NEW)
+- **Natural Language to Data** - Type "Stack the red block on blue" → generates training episodes
+- **Physics Simulation** - Runs actual simulation with Rapier physics engine
+- **Camera Capture** - Records RGB frames at 30 FPS during execution
+- **Language-Conditioned Datasets** - Instructions embedded in metadata for RT-1/OpenVLA
+- **Batch Generation** - Generate 1-50 varied episodes per instruction
+- **Scene Integration** - Uses Object Library presets for realistic scenes
+- **Motion Plan Parsing** - AI converts instructions to robot waypoints
+- **Export Ready** - Direct LeRobot v3.0 format with images + language
 
 ### HuggingFace Hub Integration (NEW)
 - **Direct Upload** - Push datasets to HuggingFace without CLI
@@ -554,6 +574,8 @@ src/
 │   │   ├── VisionAnalysisPanel.tsx    # Scene understanding with AI
 │   │   ├── TextTo3DPanel.tsx          # Text-to-3D object generation
 │   │   ├── ImageTo3DPanel.tsx         # Image-to-3D with CSM API
+│   │   ├── ObjectLibraryPanel.tsx     # Physics object library browser
+│   │   ├── LLMRecordingPanel.tsx      # LLM → Physics recording
 │   │   ├── JointTrajectoryGraph.tsx   # Real-time plotting
 │   │   ├── SerialConnectionPanel.tsx  # Hardware connection
 │   │   └── ...
@@ -580,6 +602,8 @@ src/
 │   ├── textTo3D.ts            # Text-to-3D model generation
 │   ├── csmImageTo3D.ts        # CSM API for image-to-3D conversion
 │   ├── objectTaskGenerator.ts # Auto-generate task templates for objects
+│   ├── objectLibrary.ts       # Physics object definitions (YCB + primitives)
+│   ├── physicsEpisodeGenerator.ts # LLM → Physics episode recording
 │   ├── logger.ts              # Structured logging utility
 │   ├── huggingfaceHub.ts      # HuggingFace Hub API integration
 │   ├── policyRunner.ts        # ONNX Runtime policy execution

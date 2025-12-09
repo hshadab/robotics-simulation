@@ -706,6 +706,72 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
         },
       ],
     },
+    {
+      id: 'objects',
+      title: 'Object Library',
+      icon: <Box className="w-5 h-5" />,
+      color: 'purple',
+      benefit: 'Load physics-enabled objects and scene presets for robot manipulation tasks - no manual setup needed.',
+      steps: [
+        {
+          title: 'Open Object Library',
+          description: 'Go to the Control tab in the Tools panel (right side), then open "Object Library".',
+        },
+        {
+          title: 'Load a Scene Preset',
+          description: 'Choose from 7 presets: Block Stacking, Multi-Stack, Cup Pouring, Color Sorting, Fruit Pick & Place, Can Lineup, Office Desk.',
+          tip: 'Presets load multiple objects in useful configurations for common tasks'
+        },
+        {
+          title: 'Or Add Individual Objects',
+          description: 'Browse 6 categories: Containers, Food, Tools, Toys, Kitchen, Office. Click any object to add it.',
+        },
+        {
+          title: 'Manage Scene Objects',
+          description: 'View all objects in scene. Click trash icon to remove individual objects, or Clear All to reset.',
+        },
+        {
+          title: 'Interact with Physics',
+          description: 'Objects have realistic physics - use the gripper to grab and manipulate them.',
+          tip: 'Great for recording diverse manipulation demonstrations'
+        },
+      ],
+    },
+    {
+      id: 'llmphysics',
+      title: 'LLM → Physics Recording',
+      icon: <Wand2 className="w-5 h-5" />,
+      color: 'fuchsia',
+      benefit: 'Generate training data by describing tasks in natural language - AI executes in physics simulation with camera recording.',
+      steps: [
+        {
+          title: 'Open LLM → Physics Panel',
+          description: 'Go to the Data tab in the Tools panel (right side), then open "LLM → Physics".',
+        },
+        {
+          title: 'Select a Scene Preset',
+          description: 'Choose a scene preset (e.g., Block Stacking) to load objects for the task.',
+        },
+        {
+          title: 'Enter Task Instruction',
+          description: 'Type a natural language instruction like "Pick up the red block and stack it on the blue block".',
+          tip: 'Use the Quick Tasks buttons for common instructions'
+        },
+        {
+          title: 'Configure Generation',
+          description: 'Set episode count (1-50) and toggle camera capture for vision training.',
+        },
+        {
+          title: 'Generate Episodes',
+          description: 'Click Generate. AI creates motion plan, physics sim executes, camera captures frames.',
+        },
+        {
+          title: 'Export Training Data',
+          description: 'Export to LeRobot format with language instructions + camera images for RT-1/OpenVLA training.',
+          tip: 'Language instruction is embedded in dataset metadata'
+        },
+      ],
+    },
   ];
 
   const quickStartSteps = [
