@@ -373,11 +373,13 @@ function parseAmount(message: string): number {
 }
 
 // Calculate base angle to point at a position
+// Robot faces +Z direction when base=0, positive rotation is counter-clockwise (left)
 function calculateBaseAngleForPosition(x: number, z: number): number {
-  // atan2(z, x) gives angle from X axis, we need to rotate to face the object
-  const angleRad = Math.atan2(z, x);
+  // atan2(x, z) gives angle from Z axis (forward direction)
+  // Positive X is to the left, so positive angle rotates left
+  const angleRad = Math.atan2(x, z);
   const angleDeg = (angleRad * 180) / Math.PI;
-  // Our base 0° faces forward (+X), positive is left
+  console.log(`[calculateBaseAngle] x=${x.toFixed(3)}, z=${z.toFixed(3)} => angle=${angleDeg.toFixed(1)}°`);
   return Math.max(-110, Math.min(110, angleDeg));
 }
 
@@ -583,29 +585,66 @@ for (let i = 0; i < 2; i++) {
     const baseAngle = calculateBaseAngleForPosition(objX, objZ);
     const objName = targetObject.name || targetObject.id;
 
-    // Calculate distance for reach
+    // Calculate horizontal distance from robot base to object
     const distance = Math.sqrt(objX * objX + objZ * objZ);
 
-    // Adjust shoulder/elbow based on distance and height
-    // Object is typically at Y=0.05 (on floor), arm base is at ~0.12m
-    const reachShoulder = distance > 0.2 ? 30 : 45;
-    const lowerShoulder = objY < 0.1 ? -30 : -10;
-    const lowerElbow = objY < 0.1 ? -100 : -70;
+    console.log(`[simulateArmResponse] Pick up "${objName}": pos=[${objX.toFixed(3)}, ${objY.toFixed(3)}, ${objZ.toFixed(3)}], distance=${distance.toFixed(3)}m, baseAngle=${baseAngle.toFixed(1)}°`);
+
+    // SO-101 arm segment lengths (approximate):
+    // - Upper arm (shoulder to elbow): ~10cm
+    // - Forearm (elbow to wrist): ~10cm
+    // - Total reach: ~20cm
+
+    // Calculate joint angles based on distance and height
+    // For objects close (< 15cm): more bent elbow
+    // For objects far (> 15cm): more extended arm
+
+    let approachShoulder: number;
+    let lowerShoulder: number;
+    let lowerElbow: number;
+
+    if (distance < 0.12) {
+      // Very close - need to reach down more vertically
+      approachShoulder = 20;
+      lowerShoulder = -40;
+      lowerElbow = -110;
+    } else if (distance < 0.18) {
+      // Medium distance - balanced reach
+      approachShoulder = 35;
+      lowerShoulder = -25;
+      lowerElbow = -95;
+    } else {
+      // Far - extend more horizontally
+      approachShoulder = 50;
+      lowerShoulder = -10;
+      lowerElbow = -75;
+    }
+
+    // Adjust for object height (Y)
+    // Objects higher up need less lowering
+    if (objY > 0.08) {
+      lowerShoulder += 15;
+      lowerElbow += 20;
+    }
+
+    console.log(`[simulateArmResponse] Calculated joints: approach=${approachShoulder}°, lower=${lowerShoulder}°, elbow=${lowerElbow}°`);
 
     return {
       action: 'sequence',
       joints: [
-        { gripper: 100 }, // Open gripper
-        { base: baseAngle, shoulder: reachShoulder }, // Rotate and extend toward object
-        { shoulder: lowerShoulder, elbow: lowerElbow }, // Lower to object
+        { gripper: 100 }, // Open gripper wide
+        { base: baseAngle }, // Rotate to face object
+        { shoulder: approachShoulder, elbow: -30 }, // Raise and extend toward object
+        { shoulder: lowerShoulder, elbow: lowerElbow }, // Lower to grasp height
         { gripper: 0 }, // Close gripper
-        { shoulder: 30, elbow: -30 }, // Lift up
+        { shoulder: 30, elbow: -45 }, // Lift object up
       ],
-      description: `Picking up "${objName}" at position [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}]`,
+      description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] (distance: ${(distance * 100).toFixed(0)}cm)`,
       code: `// Pick up "${objName}"
 await openGripper();
 await moveJoint('base', ${baseAngle.toFixed(0)});
-await moveJoint('shoulder', ${reachShoulder});
+await moveJoint('shoulder', ${approachShoulder});
+await moveJoint('elbow', -30);
 await moveJoint('shoulder', ${lowerShoulder});
 await moveJoint('elbow', ${lowerElbow});
 await closeGripper();
