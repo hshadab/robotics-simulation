@@ -15,63 +15,36 @@ import {
   Gamepad2,
   ListChecks,
   Activity,
-  Radio,
   Camera,
-  Sparkles,
   BarChart3,
-  Crosshair,
   HardDrive,
-  Users,
   Hand,
   Play,
-  Cpu,
   Search,
   ChevronDown,
   ChevronRight,
-  Layers,
-  GraduationCap,
-  Upload,
   Box,
 } from 'lucide-react';
 
-// Import all panel components
+// Import panel components (simplified set)
 import { JointControls } from './JointControls';
 import { PresetButtons } from './PresetButtons';
 import { EnvironmentSelector } from './EnvironmentSelector';
-import { AdvancedControlsPanel } from './AdvancedControlsPanel';
-import { NumericalIKPanel } from './NumericalIKPanel';
-import { TaskTemplatesPanel } from './TaskTemplatesPanel';
-import { ParameterizedTaskPanel } from './ParameterizedTaskPanel';
-import { VisualRandomizationPanel } from './VisualRandomizationPanel';
-import { DatasetAugmentationPanel } from './DatasetAugmentationPanel';
-import { AutoEpisodePanel } from './AutoEpisodePanel';
-import { GuidedChallengePanel } from './GuidedChallengePanel';
 import { JointTrajectoryGraph } from './JointTrajectoryGraph';
 import { PolicyBrowserPanel } from './PolicyBrowserPanel';
 import { VoiceControlPanel } from './VoiceControlPanel';
-import type { Episode } from '../../lib/datasetExporter';
 import { VisionAnalysisPanel } from './VisionAnalysisPanel';
-import { TextTo3DPanel } from './TextTo3DPanel';
-import { AIEnvironmentPanel } from './AIEnvironmentPanel';
 import { DatasetRecorderPanel } from './DatasetRecorder';
 import { DatasetPlayerPanel } from './DatasetPlayer';
 import { DatasetBrowserPanel } from './DatasetBrowserPanel';
-import { DatasetStatsPanel } from './DatasetStatsPanel';
-import { TutorialPanel } from './TutorialPanel';
 import { SerialConnectionPanel } from './SerialConnectionPanel';
 import { HandTrackingPanel } from './HandTrackingPanel';
-import { MultiRobotPanel } from './MultiRobotPanel';
-import { SensorRealismPanel } from './SensorRealismPanel';
 import { VisionPanel } from './VisionPanel';
 import { SaveLoadPanel } from './SaveLoadPanel';
-import { ChallengePanel } from './ChallengePanel';
-import { HuggingFaceUploadPanel } from './HuggingFaceUploadPanel';
 import { ImageTo3DPanel } from './ImageTo3DPanel';
 import { ObjectLibraryPanel } from './ObjectLibraryPanel';
-import { LLMRecordingPanel } from './LLMRecordingPanel';
 import { QuickTrainPanel } from './QuickTrainPanel';
 import { SensorPanel } from '../simulation/SensorPanel';
-import { useAppStore } from '../../stores/useAppStore';
 
 // Tool category tabs
 type ToolCategory = 'control' | 'ai' | 'data' | 'hardware' | 'settings';
@@ -144,15 +117,8 @@ interface ConsolidatedToolsPanelProps {
   onShowWorkspace?: (show: boolean) => void;
 }
 
-export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
-  onModeChange,
-  onShowWorkspace,
-}) => {
+export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = () => {
   const [activeCategory, setActiveCategory] = useState<ToolCategory>('control');
-  const { activeRobotType } = useAppStore();
-
-  // Mock episodes for stats/augmentation panel demo (empty for now, populated from recording)
-  const mockEpisodes: Episode[] = [];
 
   return (
     <div className="h-full flex flex-col bg-slate-900/50">
@@ -179,17 +145,7 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {activeCategory === 'control' && (
           <>
-            {/* Tutorial for new users */}
-            {activeRobotType === 'arm' && <TutorialPanel />}
-
-            {/* Guided Challenges */}
-            {activeRobotType === 'arm' && (
-              <CollapsibleSection title="Guided Challenges" icon={<GraduationCap className="w-4 h-4" />} badge="NEW">
-                <GuidedChallengePanel />
-              </CollapsibleSection>
-            )}
-
-            {/* Joint Controls - Primary */}
+            {/* Joint Controls - Primary, always visible */}
             <CollapsibleSection
               title="Joint Controls"
               icon={<Sliders className="w-4 h-4" />}
@@ -198,142 +154,88 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
               <JointControls />
             </CollapsibleSection>
 
-            {/* Presets */}
-            <CollapsibleSection title="Presets" icon={<ListChecks className="w-4 h-4" />}>
+            {/* Presets - Quick access */}
+            <CollapsibleSection title="Presets" icon={<ListChecks className="w-4 h-4" />} defaultOpen={true}>
               <PresetButtons />
             </CollapsibleSection>
 
-            {/* Environment */}
-            <CollapsibleSection title="Environment" icon={<Gamepad2 className="w-4 h-4" />}>
-              <EnvironmentSelector />
-            </CollapsibleSection>
-
-            {/* Object Library */}
-            <CollapsibleSection title="Object Library" icon={<Box className="w-4 h-4" />} badge="NEW">
-              <ObjectLibraryPanel />
-            </CollapsibleSection>
-
-            {/* Task Templates */}
-            <CollapsibleSection title="Task Templates" icon={<ListChecks className="w-4 h-4" />}>
-              <TaskTemplatesPanel />
-            </CollapsibleSection>
-
-            {/* Parameterized Tasks */}
-            <CollapsibleSection title="Parameterized Tasks" icon={<Sliders className="w-4 h-4" />} badge="NEW">
-              <ParameterizedTaskPanel />
-            </CollapsibleSection>
-
-            {/* Trajectory Graph */}
-            <CollapsibleSection title="Trajectory" icon={<BarChart3 className="w-4 h-4" />}>
-              <JointTrajectoryGraph height={120} />
-            </CollapsibleSection>
-
-            {/* Numerical IK */}
-            <CollapsibleSection title="Numerical IK" icon={<Crosshair className="w-4 h-4" />}>
-              <NumericalIKPanel />
-            </CollapsibleSection>
-
-            {/* Advanced Controls */}
-            <CollapsibleSection title="Advanced Controls" icon={<Settings className="w-4 h-4" />}>
-              <AdvancedControlsPanel
-                onModeChange={onModeChange}
-                onShowWorkspace={onShowWorkspace}
-              />
+            {/* Advanced - Everything else hidden */}
+            <CollapsibleSection title="More Options" icon={<Settings className="w-4 h-4" />} defaultOpen={false}>
+              <div className="p-2 space-y-2">
+                <CollapsibleSection title="Environment" icon={<Gamepad2 className="w-4 h-4" />}>
+                  <EnvironmentSelector />
+                </CollapsibleSection>
+                <CollapsibleSection title="Object Library" icon={<Box className="w-4 h-4" />}>
+                  <ObjectLibraryPanel />
+                </CollapsibleSection>
+                <CollapsibleSection title="Trajectory" icon={<BarChart3 className="w-4 h-4" />}>
+                  <JointTrajectoryGraph height={120} />
+                </CollapsibleSection>
+              </div>
             </CollapsibleSection>
           </>
         )}
 
         {activeCategory === 'ai' && (
           <>
-            {/* LeRobot Policies */}
-            <CollapsibleSection
-              title="LeRobot Policies"
-              icon={<Brain className="w-4 h-4" />}
-              badge="ONNX"
-            >
-              <PolicyBrowserPanel />
-            </CollapsibleSection>
-
-            {/* Voice Control */}
+            {/* Voice Control - Primary */}
             <VoiceControlPanel />
 
-            {/* Vision Analysis */}
-            <VisionAnalysisPanel />
-
-            {/* Text to 3D */}
-            <TextTo3DPanel />
-
-            {/* Image to 3D */}
-            <CollapsibleSection title="Image to 3D" icon={<Camera className="w-4 h-4" />} badge="CSM" defaultOpen={true}>
+            {/* Image to 3D - For Quick Train */}
+            <CollapsibleSection title="Image to 3D" icon={<Camera className="w-4 h-4" />} defaultOpen={true}>
               <ImageTo3DPanel />
             </CollapsibleSection>
 
-            {/* AI Environment */}
-            <CollapsibleSection title="AI Environment" icon={<Sparkles className="w-4 h-4" />}>
-              <AIEnvironmentPanel />
+            {/* More AI Tools */}
+            <CollapsibleSection title="More AI Tools" icon={<Settings className="w-4 h-4" />} defaultOpen={false}>
+              <div className="p-2 space-y-2">
+                <CollapsibleSection title="LeRobot Policies" icon={<Brain className="w-4 h-4" />}>
+                  <PolicyBrowserPanel />
+                </CollapsibleSection>
+                <CollapsibleSection title="Vision Analysis" icon={<Camera className="w-4 h-4" />}>
+                  <VisionAnalysisPanel />
+                </CollapsibleSection>
+              </div>
             </CollapsibleSection>
           </>
         )}
 
         {activeCategory === 'data' && (
           <>
-            {/* Quick Train - Streamlined Flow */}
+            {/* Quick Train - THE main experience */}
             <QuickTrainPanel />
 
-            {/* Advanced Data Tools */}
-            <div className="mt-4 pt-4 border-t border-slate-700/50">
-              <p className="text-xs text-slate-500 mb-3 px-1">Advanced Tools</p>
-            </div>
-
-            {/* Dataset Recorder */}
+            {/* Advanced Tools - Hidden by default */}
             <CollapsibleSection
-              title="Manual Recording"
-              icon={<Database className="w-4 h-4" />}
+              title="Advanced Tools"
+              icon={<Settings className="w-4 h-4" />}
               defaultOpen={false}
             >
-              <DatasetRecorderPanel />
-            </CollapsibleSection>
+              <div className="p-2 space-y-2">
+                <CollapsibleSection
+                  title="Manual Recording"
+                  icon={<Database className="w-4 h-4" />}
+                  defaultOpen={false}
+                >
+                  <DatasetRecorderPanel />
+                </CollapsibleSection>
 
-            {/* Dataset Stats */}
-            <DatasetStatsPanel episodes={mockEpisodes} />
+                <CollapsibleSection
+                  title="Browse Hub"
+                  icon={<Search className="w-4 h-4" />}
+                  defaultOpen={false}
+                >
+                  <DatasetBrowserPanel />
+                </CollapsibleSection>
 
-            {/* Dataset Augmentation */}
-            <CollapsibleSection title="Augmentation" icon={<Layers className="w-4 h-4" />} badge="NEW">
-              <DatasetAugmentationPanel episodes={mockEpisodes} />
-            </CollapsibleSection>
-
-            {/* Auto-Episode Generator */}
-            <CollapsibleSection title="Auto-Generate" icon={<Sparkles className="w-4 h-4" />}>
-              <AutoEpisodePanel />
-            </CollapsibleSection>
-
-            {/* LLM + Physics Recording */}
-            <CollapsibleSection title="LLM → Physics" icon={<Brain className="w-4 h-4" />} badge="NEW">
-              <LLMRecordingPanel />
-            </CollapsibleSection>
-
-            {/* Dataset Browser */}
-            <CollapsibleSection
-              title="Browse Datasets"
-              icon={<Search className="w-4 h-4" />}
-              badge="Hub"
-            >
-              <DatasetBrowserPanel />
-            </CollapsibleSection>
-
-            {/* Dataset Player */}
-            <CollapsibleSection title="Play Dataset" icon={<Play className="w-4 h-4" />}>
-              <DatasetPlayerPanel />
-            </CollapsibleSection>
-
-            {/* Challenges */}
-            <CollapsibleSection title="Challenges" icon={<Cpu className="w-4 h-4" />}>
-              <ChallengePanel />
-            </CollapsibleSection>
-
-            {/* HuggingFace Upload */}
-            <CollapsibleSection title="Upload to Hub" icon={<Upload className="w-4 h-4" />} badge="NEW">
-              <HuggingFaceUploadPanel episodes={mockEpisodes} />
+                <CollapsibleSection
+                  title="Play Dataset"
+                  icon={<Play className="w-4 h-4" />}
+                  defaultOpen={false}
+                >
+                  <DatasetPlayerPanel />
+                </CollapsibleSection>
+              </div>
             </CollapsibleSection>
           </>
         )}
@@ -342,7 +244,7 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
           <>
             {/* Serial Connection - Primary */}
             <CollapsibleSection
-              title="Serial Connection"
+              title="Connect Real Robot"
               icon={<Wifi className="w-4 h-4" />}
               defaultOpen={true}
             >
@@ -350,46 +252,27 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
             </CollapsibleSection>
 
             {/* Hand Tracking */}
-            <CollapsibleSection title="Hand Tracking" icon={<Hand className="w-4 h-4" />}>
+            <CollapsibleSection title="Hand Tracking" icon={<Hand className="w-4 h-4" />} defaultOpen={false}>
               <HandTrackingPanel />
-            </CollapsibleSection>
-
-            {/* Multi-Robot */}
-            <CollapsibleSection title="Multi-Robot" icon={<Users className="w-4 h-4" />}>
-              <MultiRobotPanel />
             </CollapsibleSection>
           </>
         )}
 
         {activeCategory === 'settings' && (
           <>
+            {/* Save/Load - Most useful */}
+            <CollapsibleSection title="Save / Load" icon={<HardDrive className="w-4 h-4" />} defaultOpen={true}>
+              <SaveLoadPanel />
+            </CollapsibleSection>
+
             {/* Sensors */}
-            <CollapsibleSection
-              title="Sensors"
-              icon={<Activity className="w-4 h-4" />}
-              defaultOpen={true}
-            >
+            <CollapsibleSection title="Sensors" icon={<Activity className="w-4 h-4" />} defaultOpen={false}>
               <SensorPanel />
             </CollapsibleSection>
 
-            {/* Sensor Realism */}
-            <CollapsibleSection title="Sensor Realism" icon={<Radio className="w-4 h-4" />}>
-              <SensorRealismPanel />
-            </CollapsibleSection>
-
-            {/* Visual Randomization */}
-            <CollapsibleSection title="Visual Randomization" icon={<Sparkles className="w-4 h-4" />} badge="NEW">
-              <VisualRandomizationPanel />
-            </CollapsibleSection>
-
             {/* Robot Vision */}
-            <CollapsibleSection title="Robot Vision" icon={<Camera className="w-4 h-4" />}>
+            <CollapsibleSection title="Robot Vision" icon={<Camera className="w-4 h-4" />} defaultOpen={false}>
               <VisionPanel />
-            </CollapsibleSection>
-
-            {/* Save/Load */}
-            <CollapsibleSection title="Save / Load" icon={<HardDrive className="w-4 h-4" />}>
-              <SaveLoadPanel />
             </CollapsibleSection>
           </>
         )}
