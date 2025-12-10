@@ -54,6 +54,11 @@ import {
 } from '../../lib/quickTrainFlow';
 import { exportLeRobotDataset } from '../../lib/lerobotExporter';
 import { calculateQualityMetrics } from '../../lib/teleoperationGuide';
+import {
+  uploadViaBackendAPI,
+  isBackendAPIAvailable,
+  validateHFToken,
+} from '../../lib/huggingfaceUpload';
 
 export const QuickTrainPanel: React.FC = () => {
   const [expanded, setExpanded] = useState(true);
@@ -63,6 +68,12 @@ export const QuickTrainPanel: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
   const [apiKeyValid, setApiKeyValid] = useState<boolean | null>(null);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+
+  // HuggingFace token state
+  const [hfToken, setHfToken] = useState('');
+  const [hfTokenValid, setHfTokenValid] = useState<boolean | null>(null);
+  const [showHfTokenInput, setShowHfTokenInput] = useState(false);
+  const [backendAvailable, setBackendAvailable] = useState<boolean | null>(null);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +102,20 @@ export const QuickTrainPanel: React.FC = () => {
       setApiKeyValid(null);
     }
   }, [apiKey]);
+
+  // Validate HF token when it changes
+  useEffect(() => {
+    if (hfToken.length > 10) {
+      validateHFToken(hfToken).then(result => setHfTokenValid(result.valid));
+    } else {
+      setHfTokenValid(null);
+    }
+  }, [hfToken]);
+
+  // Check if backend API is available on mount
+  useEffect(() => {
+    isBackendAPIAvailable().then(setBackendAvailable);
+  }, []);
 
   // Get current robot state for recording
   const getCurrentState = useCallback(() => {
@@ -295,7 +320,7 @@ export const QuickTrainPanel: React.FC = () => {
 
   // ==================== STEP 4: Export ====================
 
-  const handleExport = useCallback(async () => {
+  const handleDownload = useCallback(async () => {
     const allEpisodes = getAllEpisodes(state);
     if (allEpisodes.length === 0) return;
 
@@ -320,6 +345,51 @@ export const QuickTrainPanel: React.FC = () => {
       }));
     }
   }, [state, selectedRobotId]);
+
+  const handleUploadToHuggingFace = useCallback(async () => {
+    const allEpisodes = getAllEpisodes(state);
+    if (allEpisodes.length === 0) return;
+    if (!hfToken || !hfTokenValid) {
+      setShowHfTokenInput(true);
+      return;
+    }
+
+    setState(s => ({ ...s, isExporting: true, exportProgress: 0 }));
+
+    try {
+      const repoName = `${state.objectName}-training-${Date.now()}`;
+      const result = await uploadViaBackendAPI(
+        allEpisodes,
+        {
+          hfToken,
+          repoName,
+          robotType: selectedRobotId,
+          isPrivate: true,
+          fps: 30,
+        },
+        (progress) => {
+          setState(s => ({ ...s, exportProgress: progress.progress }));
+        }
+      );
+
+      if (result.success && result.repoUrl) {
+        setState(s => ({
+          ...s,
+          isExporting: false,
+          exportProgress: 100,
+          exportedUrl: result.repoUrl ?? null,
+        }));
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+    } catch (error) {
+      setState(s => ({
+        ...s,
+        isExporting: false,
+        error: error instanceof Error ? error.message : 'Failed to upload to HuggingFace',
+      }));
+    }
+  }, [state, hfToken, hfTokenValid, selectedRobotId]);
 
   // ==================== UI Helpers ====================
 
@@ -583,35 +653,104 @@ export const QuickTrainPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* Export Button */}
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleExport}
-                disabled={state.isExporting || !isReadyToExport(state)}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500"
-              >
-                {state.isExporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Exporting...
-                  </>
-                ) : state.exportedUrl ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Downloaded!
-                  </>
-                ) : (
-                  <>
-                    <CloudUpload className="w-4 h-4 mr-2" />
-                    Export LeRobot Dataset
-                  </>
-                )}
-              </Button>
+              {/* HuggingFace Token Input */}
+              {showHfTokenInput && !hfTokenValid && (
+                <div className="mb-3 p-2 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    HuggingFace Token (write access)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      value={hfToken}
+                      onChange={(e) => setHfToken(e.target.value)}
+                      placeholder="hf_..."
+                      className="flex-1 px-2 py-1 text-sm bg-slate-800 border border-slate-600 rounded text-white"
+                    />
+                    {hfTokenValid && (
+                      <span className="flex items-center text-green-400">
+                        <CheckCircle className="w-4 h-4" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Get token at huggingface.co/settings/tokens
+                  </p>
+                </div>
+              )}
 
-              {state.exportedUrl && (
-                <p className="text-xs text-green-400 mt-2 text-center">
-                  Dataset exported! Run convert_to_parquet.py then train with LeRobot
+              {/* Export Buttons */}
+              <div className="space-y-2">
+                {/* Upload to HuggingFace (Primary) */}
+                {backendAvailable && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleUploadToHuggingFace}
+                    disabled={state.isExporting || !isReadyToExport(state)}
+                    className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500"
+                  >
+                    {state.isExporting && state.exportProgress > 0 && state.exportProgress < 100 ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading... {state.exportProgress}%
+                      </>
+                    ) : state.exportedUrl && state.exportedUrl !== 'downloaded' ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Uploaded to HuggingFace!
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="w-4 h-4 mr-2" />
+                        Upload to HuggingFace
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {/* Download as ZIP (Fallback) */}
+                <Button
+                  variant={backendAvailable ? 'secondary' : 'primary'}
+                  size="sm"
+                  onClick={handleDownload}
+                  disabled={state.isExporting || !isReadyToExport(state)}
+                  className={backendAvailable ? 'w-full' : 'w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500'}
+                >
+                  {state.isExporting && !state.exportProgress ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : state.exportedUrl === 'downloaded' ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Downloaded!
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Download ZIP
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Success Messages */}
+              {state.exportedUrl && state.exportedUrl !== 'downloaded' && (
+                <div className="mt-2 p-2 bg-green-900/30 border border-green-700/50 rounded">
+                  <p className="text-xs text-green-400">
+                    Dataset uploaded! Train with:
+                  </p>
+                  <code className="text-xs text-green-300 block mt-1">
+                    lerobot train --dataset {state.exportedUrl.split('/').slice(-2).join('/')}
+                  </code>
+                </div>
+              )}
+
+              {state.exportedUrl === 'downloaded' && (
+                <p className="text-xs text-slate-400 mt-2 text-center">
+                  Run convert_to_parquet.py then train with LeRobot
                 </p>
               )}
             </div>

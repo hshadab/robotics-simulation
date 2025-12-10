@@ -1,7 +1,8 @@
 # Render.com Blueprint for RoboSim
-# Deploy as a static site
+# Static frontend + Python API backend
 
 services:
+  # Frontend - Static Site
   - type: web
     name: robosim
     runtime: static
@@ -12,6 +13,11 @@ services:
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
         sync: false
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: robosim-api
+          property: host
     headers:
       - path: /*
         name: Cache-Control
@@ -23,3 +29,16 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # Backend API - Python FastAPI
+  - type: web
+    name: robosim-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r api/requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+    healthCheckPath: /health

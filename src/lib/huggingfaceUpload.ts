@@ -618,3 +618,142 @@ export function validateRepoName(name: string): {
   }
   return { valid: true };
 }
+
+// Get API URL from environment or default to production
+const API_URL = import.meta.env.VITE_API_URL
+  ? `https://${import.meta.env.VITE_API_URL}`
+  : '';
+
+/**
+ * Upload dataset via backend API (handles Parquet conversion server-side)
+ *
+ * This is the preferred method as it handles Parquet conversion on the server,
+ * eliminating the need for users to run Python scripts.
+ */
+export async function uploadViaBackendAPI(
+  episodes: Episode[],
+  config: {
+    hfToken: string;
+    repoName: string;
+    robotType: string;
+    isPrivate?: boolean;
+    description?: string;
+    fps?: number;
+  },
+  onProgress?: (progress: HFUploadProgress) => void
+): Promise<HFUploadResult> {
+  // If no API URL configured, fall back to client-side upload
+  if (!API_URL) {
+    console.warn('No API URL configured, falling back to client-side upload');
+    return {
+      success: false,
+      error: 'Backend API not configured. Please use the download option instead.',
+    };
+  }
+
+  try {
+    onProgress?.({
+      phase: 'preparing',
+      message: 'Preparing dataset for upload...',
+      progress: 10,
+    });
+
+    // Transform episodes to API format
+    const apiEpisodes = episodes.map((ep, idx) => ({
+      episodeIndex: idx,
+      frames: ep.frames.map(f => ({
+        timestamp: f.timestamp,
+        observation: {
+          jointPositions: f.observation.jointPositions,
+        },
+        action: {
+          jointPositions: f.action.jointTargets,
+        },
+      })),
+      metadata: {
+        languageInstruction: ep.metadata.languageInstruction || ep.metadata.task || 'manipulation task',
+        task: ep.metadata.task,
+      },
+    }));
+
+    onProgress?.({
+      phase: 'uploading',
+      message: 'Uploading to HuggingFace via API...',
+      progress: 30,
+    });
+
+    const response = await fetch(`${API_URL}/api/dataset/upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        episodes: apiEpisodes,
+        metadata: {
+          robotType: config.robotType,
+          totalFrames: episodes.reduce((sum, ep) => sum + ep.frames.length, 0),
+          totalEpisodes: episodes.length,
+          fps: config.fps || 30,
+        },
+        hfToken: config.hfToken,
+        repoName: config.repoName,
+        isPrivate: config.isPrivate ?? true,
+        description: config.description,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || `Upload failed with status ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    onProgress?.({
+      phase: 'complete',
+      message: 'Upload complete!',
+      progress: 100,
+    });
+
+    return {
+      success: true,
+      repoUrl: result.repoUrl,
+      repoId: config.repoName,
+      stats: {
+        episodeCount: episodes.length,
+        frameCount: episodes.reduce((sum, ep) => sum + ep.frames.length, 0),
+        fileSizeBytes: 0,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+
+    onProgress?.({
+      phase: 'error',
+      message: errorMessage,
+      progress: 0,
+    });
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Check if backend API is available
+ */
+export async function isBackendAPIAvailable(): Promise<boolean> {
+  if (!API_URL) return false;
+
+  try {
+    const response = await fetch(`${API_URL}/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
