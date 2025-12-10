@@ -8,8 +8,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Camera,
-  Mic,
-  MicOff,
   Rocket,
   CheckCircle,
   Loader2,
@@ -18,10 +16,13 @@ import {
   Sparkles,
   Box,
   ChevronLeft,
+  Send,
 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import type { Episode, Frame } from '../../lib/datasetExporter';
 import { generateTrainableObject as generateFalObject } from '../../lib/falImageTo3D';
+import { useLLMChat } from '../../hooks/useLLMChat';
+import { getClaudeApiKey, setClaudeApiKey } from '../../lib/claudeApi';
 import { getOptimalPlacement } from '../../lib/workspacePlacement';
 import {
   PRIMITIVE_OBJECTS,
@@ -73,17 +74,109 @@ export const MinimalTrainFlow: React.FC<MinimalTrainFlowProps> = ({ onOpenDrawer
   const recordedFramesRef = useRef<Array<{ timestamp: number; jointPositions: number[] }>>([]);
 
   // Store
-  const { joints, selectedRobotId, spawnObject, objects } = useAppStore();
+  const { joints, selectedRobotId, spawnObject, objects, messages, isLLMLoading, isAnimating } = useAppStore();
+
+  // Chat
+  const { sendMessage } = useLLMChat();
+  const [chatInput, setChatInput] = useState('');
+  const [hasClaudeKey, setHasClaudeKey] = useState(!!getClaudeApiKey());
+  const [claudeKeyInput, setClaudeKeyInput] = useState('');
 
   // Check backend on mount
   useEffect(() => {
     isBackendAPIAvailable().then(setBackendAvailable);
   }, []);
 
-  // Get joint positions
+  // Get joint positions (must be before handleChatSend which uses it)
   const getJointPositions = useCallback((): number[] => {
     return [joints.base, joints.shoulder, joints.elbow, joints.wrist, joints.wristRoll, joints.gripper];
   }, [joints]);
+
+  // Handle chat send
+  const handleChatSend = useCallback(() => {
+    if (chatInput.trim() && !isLLMLoading) {
+      // Start recording when sending a command
+      if (!isRecording) {
+        setIsRecording(true);
+        recordedFramesRef.current = [];
+        const startTime = Date.now();
+        const interval = setInterval(() => {
+          recordedFramesRef.current.push({
+            timestamp: Date.now() - startTime,
+            jointPositions: getJointPositions(),
+          });
+        }, 33);
+        recorderRef.current = { intervalId: interval };
+      }
+
+      sendMessage(chatInput.trim());
+      setChatInput('');
+    }
+  }, [chatInput, isLLMLoading, isRecording, sendMessage, getJointPositions]);
+
+  // Auto-stop recording when robot stops moving after a command
+  useEffect(() => {
+    if (isRecording && !isAnimating && !isLLMLoading && recordedFramesRef.current.length > 30) {
+      // Wait a moment to ensure the animation is truly complete
+      const timeout = setTimeout(() => {
+        if (!isAnimating) {
+          // Stop recording and save episode
+          setIsRecording(false);
+          if (recorderRef.current) {
+            clearInterval(recorderRef.current.intervalId);
+          }
+
+          if (recordedFramesRef.current.length > 10) {
+            const frames: Frame[] = recordedFramesRef.current.map((f, i) => ({
+              timestamp: f.timestamp,
+              observation: { jointPositions: f.jointPositions },
+              action: { jointTargets: f.jointPositions, gripper: f.jointPositions[5] },
+              done: i === recordedFramesRef.current.length - 1,
+            }));
+
+            const duration = recordedFramesRef.current.length > 0
+              ? (recordedFramesRef.current[recordedFramesRef.current.length - 1].timestamp - recordedFramesRef.current[0].timestamp) / 1000
+              : 0;
+
+            const episode: Episode = {
+              episodeId: state.demoEpisodes.length,
+              frames,
+              metadata: {
+                robotType: 'arm',
+                robotId: selectedRobotId,
+                task: `pick_${state.objectName}`,
+                languageInstruction: `Pick up the ${state.objectName}`,
+                duration,
+                frameCount: frames.length,
+                recordedAt: new Date().toISOString(),
+              },
+            };
+
+            const quality = calculateQualityMetrics(recordedFramesRef.current);
+
+            setState(s => ({
+              ...s,
+              demoEpisodes: [...s.demoEpisodes, episode],
+              demoQuality: [...s.demoQuality, quality],
+            }));
+          }
+
+          recordedFramesRef.current = [];
+        }
+      }, 500);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isRecording, isAnimating, isLLMLoading, state.demoEpisodes.length, state.objectName, selectedRobotId]);
+
+  // Save Claude API key
+  const handleSaveClaudeKey = useCallback(() => {
+    if (claudeKeyInput.trim()) {
+      setClaudeApiKey(claudeKeyInput.trim());
+      setHasClaudeKey(true);
+      setClaudeKeyInput('');
+    }
+  }, [claudeKeyInput]);
 
   // Handle adding a standard library object
   const handleAddLibraryObject = useCallback((template: ObjectTemplate) => {
@@ -159,71 +252,6 @@ export const MinimalTrainFlow: React.FC<MinimalTrainFlowProps> = ({ onOpenDrawer
       setIsProcessing(false);
     }
   }, [falApiKey, objects, spawnObject]);
-
-  // Start/stop recording
-  const toggleRecording = useCallback(() => {
-    if (isRecording) {
-      // Stop recording
-      setIsRecording(false);
-
-      if (recordedFramesRef.current.length > 10) {
-        const frames: Frame[] = recordedFramesRef.current.map((f, i) => ({
-          timestamp: f.timestamp,
-          observation: { jointPositions: f.jointPositions },
-          action: { jointTargets: f.jointPositions, gripper: f.jointPositions[5] },
-          done: i === recordedFramesRef.current.length - 1,
-        }));
-
-        const duration = recordedFramesRef.current.length > 0
-          ? (recordedFramesRef.current[recordedFramesRef.current.length - 1].timestamp - recordedFramesRef.current[0].timestamp) / 1000
-          : 0;
-
-        const episode: Episode = {
-          episodeId: state.demoEpisodes.length,
-          frames,
-          metadata: {
-            robotType: 'arm',
-            robotId: selectedRobotId,
-            task: `pick_${state.objectName}`,
-            languageInstruction: `Pick up the ${state.objectName}`,
-            duration,
-            frameCount: frames.length,
-            recordedAt: new Date().toISOString(),
-          },
-        };
-
-        const quality = calculateQualityMetrics(recordedFramesRef.current);
-
-        setState(s => ({
-          ...s,
-          demoEpisodes: [...s.demoEpisodes, episode],
-          demoQuality: [...s.demoQuality, quality],
-        }));
-      }
-
-      recordedFramesRef.current = [];
-    } else {
-      // Start recording
-      setIsRecording(true);
-      recordedFramesRef.current = [];
-
-      const startTime = Date.now();
-      const interval = setInterval(() => {
-        recordedFramesRef.current.push({
-          timestamp: Date.now() - startTime,
-          jointPositions: getJointPositions(),
-        });
-      }, 33);
-
-      // Auto-stop after 30 seconds
-      setTimeout(() => {
-        clearInterval(interval);
-        if (isRecording) toggleRecording();
-      }, 30000);
-
-      recorderRef.current = { intervalId: interval } as any;
-    }
-  }, [isRecording, state.demoEpisodes.length, state.objectName, getJointPositions]);
 
   // Generate training data
   const handleGenerate = useCallback(async () => {
@@ -477,49 +505,108 @@ export const MinimalTrainFlow: React.FC<MinimalTrainFlowProps> = ({ onOpenDrawer
         );
 
       case 'record-demo':
+        // Check if Claude API key is needed
+        if (!hasClaudeKey) {
+          return (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-300">Enter your Claude API key to control the robot with chat</p>
+              <input
+                type="password"
+                value={claudeKeyInput}
+                onChange={(e) => setClaudeKeyInput(e.target.value)}
+                placeholder="sk-ant-..."
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-sm"
+              />
+              <p className="text-xs text-slate-500">Get one at console.anthropic.com</p>
+              <button
+                onClick={handleSaveClaudeKey}
+                disabled={!claudeKeyInput.trim()}
+                className="w-full py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 rounded-xl text-white font-medium transition"
+              >
+                Continue
+              </button>
+            </div>
+          );
+        }
+
         return (
-          <>
-            <div className="text-center mb-4">
-              <p className="text-slate-300">
+          <div className="space-y-4">
+            {/* Status */}
+            <div className="text-center">
+              <p className="text-slate-300 text-sm">
                 {state.demoEpisodes.length === 0
-                  ? `Show the robot how to pick up the ${state.objectName}`
+                  ? `Tell the robot what to do with the ${state.objectName}`
                   : `${state.demoEpisodes.length} demo${state.demoEpisodes.length > 1 ? 's' : ''} recorded`
                 }
               </p>
+              {isRecording && (
+                <div className="flex items-center justify-center gap-2 mt-2 text-red-400">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-xs">Recording...</span>
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={toggleRecording}
-              className={`w-full py-4 rounded-2xl font-semibold text-lg transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 ${
-                isRecording
-                  ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse'
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white'
-              }`}
-            >
-              {isRecording ? (
-                <>
-                  <MicOff className="w-6 h-6" />
-                  Stop Recording
-                </>
-              ) : (
-                <>
-                  <Mic className="w-6 h-6" />
-                  {state.demoEpisodes.length === 0 ? 'Record Demo' : 'Record Another'}
-                </>
-              )}
-            </button>
+            {/* Suggested prompts */}
+            {state.demoEpisodes.length === 0 && !isRecording && (
+              <div className="flex flex-wrap gap-1 justify-center">
+                {[`Pick up the ${state.objectName}`, `Move to the ${state.objectName}`, `Grab the ${state.objectName}`].map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => {
+                      setChatInput(prompt);
+                    }}
+                    className="px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
 
+            {/* Chat input */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                placeholder={`"Pick up the ${state.objectName}"`}
+                disabled={isLLMLoading}
+                className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+              />
+              <button
+                onClick={handleChatSend}
+                disabled={!chatInput.trim() || isLLMLoading}
+                className="p-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-700 rounded-xl text-white transition"
+              >
+                {isLLMLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+
+            {/* Last message preview */}
+            {messages.length > 0 && (
+              <div className="text-xs text-slate-500 truncate">
+                Last: {messages[messages.length - 1]?.content?.slice(0, 50)}...
+              </div>
+            )}
+
+            {/* Generate button */}
             {state.demoEpisodes.length >= 1 && !isRecording && (
               <button
                 onClick={handleGenerate}
                 disabled={isProcessing}
-                className="w-full py-4 mt-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-2xl text-white font-semibold text-lg transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+                className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-2xl text-white font-semibold text-lg transition transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
               >
                 <Sparkles className="w-6 h-6" />
                 Generate Training Data
               </button>
             )}
-          </>
+          </div>
         );
 
       case 'generate':
