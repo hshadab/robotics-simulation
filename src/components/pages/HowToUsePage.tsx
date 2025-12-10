@@ -4,7 +4,7 @@ import {
   Keyboard, Mouse, Settings, Play, Save, Database, Box, ChevronDown,
   ChevronRight, Layers, Target, Video, HelpCircle, Monitor,
   Zap, CheckCircle, Lightbulb, BookOpen, ArrowRight, Star,
-  MessageSquare, BarChart3
+  MessageSquare, BarChart3, Sparkles
 } from 'lucide-react';
 
 interface HowToUsePageProps {
@@ -1188,6 +1188,56 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
             {/* AI Features */}
             {activeSection === 'ai' && (
               <div className="space-y-8">
+                {/* Quick Train - Hero Section */}
+                <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/30 border-2 border-purple-500/50 p-6">
+                  <div className="flex items-center gap-2 text-purple-300 text-sm font-medium mb-2">
+                    <Star className="w-4 h-4" />
+                    RECOMMENDED STARTING POINT
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-3 flex items-center gap-3">
+                    <Sparkles className="w-6 h-6 text-purple-400" />
+                    Quick Train Flow
+                  </h2>
+                  <p className="text-slate-300 mb-4">
+                    The fastest path from any object to a trained robot policy. Our Apple-inspired one-button wizard guides you through 4 simple steps.
+                  </p>
+
+                  {/* Steps */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-slate-800/50 p-3 border border-purple-500/30">
+                      <div className="text-lg font-black text-purple-400">1. Add Object</div>
+                      <div className="text-xs text-slate-400 mt-1">Pick from 34 standard objects or upload a photo</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-3 border border-blue-500/30">
+                      <div className="text-lg font-black text-blue-400">2. Record Demo</div>
+                      <div className="text-xs text-slate-400 mt-1">Chat: "Pick up the block" - auto-records</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-3 border border-green-500/30">
+                      <div className="text-lg font-black text-green-400">3. Generate</div>
+                      <div className="text-xs text-slate-400 mt-1">Auto-generate 50 training episodes</div>
+                    </div>
+                    <div className="bg-slate-800/50 p-3 border border-orange-500/30">
+                      <div className="text-lg font-black text-orange-400">4. Upload</div>
+                      <div className="text-xs text-slate-400 mt-1">One-click export to HuggingFace</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      No API key needed for standard objects
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      Chat-based recording with auto-stop
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      All advanced tools in slide-out drawer
+                    </div>
+                  </div>
+                </div>
+
                 {/* Overview Panel */}
                 <div className="bg-slate-900/50 border-2 border-pink-500/30 p-6">
                   <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">

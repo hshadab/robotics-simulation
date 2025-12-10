@@ -51,7 +51,7 @@ const RobotArmSVG: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 // Feature tabs configuration
-type FeatureTab = 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'image3d' | 'autogen' | 'challenges' | 'augment' | 'langlearn' | 'objects' | 'llmphysics';
+type FeatureTab = 'quicktrain' | 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'image3d' | 'autogen' | 'challenges' | 'augment' | 'langlearn' | 'objects' | 'llmphysics';
 
 const FEATURE_TABS: Array<{
   id: FeatureTab;
@@ -63,6 +63,26 @@ const FEATURE_TABS: Array<{
   howTo: string[];
   color: string;
 }> = [
+  {
+    id: 'quicktrain',
+    label: 'Quick Train',
+    icon: <Sparkles className="w-5 h-5" />,
+    title: 'Photo to Trained Robot in Minutes',
+    description: 'The fastest path from any object to a trained robot policy. Upload a photo or pick a standard object, chat to demonstrate, and export to HuggingFace.',
+    benefits: [
+      'One-button wizard - no complex UI',
+      '34 standard objects ready instantly',
+      'Photo to 3D via fal.ai (~20 seconds)',
+      'Chat-based recording with auto-stop',
+    ],
+    howTo: [
+      'Click "Use Standard Object" or "Upload Photo"',
+      'Object appears in scene automatically',
+      'Chat: "Pick up the [object]" - demo auto-records',
+      'Click "Generate" then "Upload to HuggingFace"',
+    ],
+    color: 'gradient',
+  },
   {
     id: 'chat',
     label: 'AI Chat',
@@ -387,7 +407,7 @@ const FEATURE_TABS: Array<{
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onLearnMore, onInstructions, onComparison }) => {
   const [hoveredRobot, setHoveredRobot] = useState<string | null>(null);
-  const [activeFeatureTab, setActiveFeatureTab] = useState<FeatureTab>('chat');
+  const [activeFeatureTab, setActiveFeatureTab] = useState<FeatureTab>('quicktrain');
 
   const handleEnterApp = () => {
     onLogin();
@@ -562,11 +582,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onLearnMore, 
       <section className="relative px-4 md:px-8 py-8 md:py-12 max-w-7xl mx-auto">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-3 md:mb-4">
           {[
+            { icon: <Sparkles className="w-5 h-5 md:w-6 md:h-6" />, label: 'Quick Train', desc: 'Photo → Policy', color: 'purple' },
             { icon: <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />, label: 'Chat Control', desc: 'Natural language', color: 'blue' },
             { icon: <Mic className="w-5 h-5 md:w-6 md:h-6" />, label: 'Voice Control', desc: 'Hands-free', color: 'cyan' },
             { icon: <Eye className="w-5 h-5 md:w-6 md:h-6" />, label: 'Vision AI', desc: 'Scene understanding', color: 'pink' },
-            { icon: <Code className="w-5 h-5 md:w-6 md:h-6" />, label: 'Code Copilot', desc: 'AI autocomplete', color: 'yellow' },
-            { icon: <Box className="w-5 h-5 md:w-6 md:h-6" />, label: 'Text to 3D', desc: 'Generate objects', color: 'emerald' },
+            { icon: <Box className="w-5 h-5 md:w-6 md:h-6" />, label: 'Object Library', desc: '34 objects', color: 'emerald' },
             { icon: <Camera className="w-5 h-5 md:w-6 md:h-6" />, label: 'Image to 3D', desc: 'Photo → 3D', color: 'teal' },
           ].map((item) => (
             <div

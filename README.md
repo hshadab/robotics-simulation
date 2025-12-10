@@ -306,6 +306,16 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 - **Language Instructions** - Chat messages become language labels automatically
 - **Natural Demonstrations** - Create diverse data through natural conversation
 
+### Quick Train Flow (NEW - Apple-Inspired UX)
+- **One-Button Wizard** - Minimalist step-by-step flow: Add Object → Record Demo → Generate → Upload
+- **Standard Object Library** - 34 physics-enabled objects (cubes, balls, cylinders) ready to use instantly
+- **Photo to 3D** - Upload a photo and convert to training-ready 3D model via fal.ai
+- **Chat-Based Recording** - Say "pick up the block" and the demo is auto-recorded
+- **Auto-Stop Recording** - Recording stops automatically when robot finishes moving
+- **Suggested Prompts** - Contextual command suggestions based on your object
+- **Direct HuggingFace Upload** - One-click export with automatic Parquet conversion
+- **Tools Drawer** - All advanced tools hidden in slide-out panel for minimal distraction
+
 ### Guided Teleoperation Recording (NEW)
 - **Task Templates** - Pre-defined tasks: Pick & Place, Stacking, Pushing, Waypoint Navigation
 - **Step-by-Step Visual Guides** - 3D overlays show target positions, arrows, and ghost gripper
@@ -333,11 +343,12 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 - **Upload Progress** - Real-time progress tracking
 - **Direct Link** - Open uploaded dataset in browser
 
-### Consolidated UI
-- **Tabbed Tool Categories** - Control, AI, Data, Hardware, Settings tabs
-- **Reduced Clutter** - 20+ panels organized into 5 logical categories
-- **Collapsible Sections** - Expand only what you need
-- **Quick Access** - Most-used tools open by default
+### Minimal UI Design (Apple-Inspired)
+- **One-Button Flow** - Main interface shows only the Quick Train wizard
+- **Progressive Disclosure** - Complex features hidden until needed
+- **Slide-Out Tools Drawer** - Access all 20+ panels via settings button
+- **Step-Based Wizard** - Clear progression: Add Object → Demo → Generate → Upload
+- **Distraction-Free** - Focus on the task, not the UI
 
 ## Tech Stack
 
