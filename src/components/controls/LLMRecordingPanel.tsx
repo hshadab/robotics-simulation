@@ -92,9 +92,47 @@ export const LLMRecordingPanel: React.FC = () => {
     // Check if Claude API is available for more complex parsing
     const apiKey = getClaudeApiKey();
     if (apiKey) {
-      // TODO: Implement Claude API call for complex motion planning
-      // For now, return a default plan
-      console.log('Claude API available for complex parsing');
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1024,
+            system: `You are a robot motion planner. Given a natural language instruction, output a JSON motion plan.
+The plan should have this structure:
+{
+  "description": "Brief description of the motion",
+  "steps": [
+    { "joints": { "base": 0, "shoulder": 30, "elbow": -45, "wrist": 0, "gripper": 100 }, "duration": 1000 },
+    ...
+  ]
+}
+Joint ranges: base (-135 to 135), shoulder (-90 to 90), elbow (-135 to 0), wrist (-90 to 90), gripper (0=closed to 100=open).
+Respond ONLY with valid JSON, no explanation.`,
+            messages: [{ role: 'user', content: text }],
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.content[0]?.text || '';
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.steps && Array.isArray(parsed.steps)) {
+              return parsed as MotionPlan;
+            }
+          }
+        }
+      } catch {
+        // Fall through to default plan
+      }
     }
 
     // Default: generate a pick-and-place plan

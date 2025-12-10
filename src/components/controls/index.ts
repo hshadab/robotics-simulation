@@ -40,3 +40,7 @@ export { ConsolidatedToolsPanel } from './ConsolidatedToolsPanel';
 export { ObjectLibraryPanel } from './ObjectLibraryPanel';
 // LLM Recording
 export { LLMRecordingPanel } from './LLMRecordingPanel';
+// Guided Recording for LeRobot
+export { GuidedRecorderPanel } from './GuidedRecorder';
+export { DatasetStatsDashboard } from './DatasetStats';
+export { ChatRecordingPanel } from './ChatRecordingPanel';

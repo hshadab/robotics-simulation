@@ -7,6 +7,10 @@
 import type { JointState, ActiveRobotType, WheeledRobotState, DroneState, HumanoidState, SensorReading, SimObject } from '../types';
 import { SYSTEM_PROMPTS } from '../hooks/useLLMChat';
 import { generateSemanticState } from './semanticState';
+import { API_CONFIG, STORAGE_CONFIG } from './config';
+import { loggers } from './logger';
+
+const log = loggers.claude;
 
 export interface ClaudeResponse {
   action: 'move' | 'sequence' | 'code' | 'explain' | 'query' | 'error';
@@ -140,8 +144,8 @@ export async function callClaudeAPI(
   }
 
   try {
-    // Build messages array with conversation history (last 10 messages for context)
-    const recentHistory = conversationHistory.slice(-10);
+    // Build messages array with conversation history
+    const recentHistory = conversationHistory.slice(-API_CONFIG.MAX_CONVERSATION_HISTORY);
     const messages = [
       ...recentHistory.map(msg => ({
         role: msg.role as 'user' | 'assistant',
@@ -153,17 +157,17 @@ export async function callClaudeAPI(
       },
     ];
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`${API_CONFIG.CLAUDE.BASE_URL}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': API_CONFIG.CLAUDE.VERSION,
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
+        model: API_CONFIG.CLAUDE.DEFAULT_MODEL,
+        max_tokens: API_CONFIG.CLAUDE.MAX_TOKENS,
         system: buildSystemPrompt(robotType, fullState),
         messages,
       }),
@@ -206,7 +210,7 @@ export async function callClaudeAPI(
       description: content,
     };
   } catch (error) {
-    console.error('Claude API error:', error);
+    log.error('Claude API error', error);
     return {
       action: 'error',
       description: `Failed to connect to Claude: ${error instanceof Error ? error.message : 'Unknown error'}. Using demo mode.`,
@@ -853,20 +857,41 @@ function simulateHumanoidResponse(message: string, _state: HumanoidState): Claud
   };
 }
 
-// Store for API key
+// In-memory store for API key (not persisted for security)
 let storedApiKey: string | null = null;
 
-export function setClaudeApiKey(key: string | null) {
+/**
+ * Set Claude API key
+ * Note: For security, API keys are only stored in memory by default.
+ * Enable localStorage storage only for development convenience.
+ */
+export function setClaudeApiKey(key: string | null, persistToStorage: boolean = false) {
   storedApiKey = key;
-  if (key) {
-    localStorage.setItem('robosim-claude-api-key', key);
-  } else {
-    localStorage.removeItem('robosim-claude-api-key');
+  if (persistToStorage) {
+    if (key) {
+      // Warn about security implications
+      log.warn('Storing API key in localStorage. This is insecure for production use.');
+      localStorage.setItem(STORAGE_CONFIG.KEYS.CLAUDE_API_KEY, key);
+    } else {
+      localStorage.removeItem(STORAGE_CONFIG.KEYS.CLAUDE_API_KEY);
+    }
   }
 }
 
+/**
+ * Get Claude API key from memory or localStorage
+ */
 export function getClaudeApiKey(): string | null {
   if (storedApiKey) return storedApiKey;
-  storedApiKey = localStorage.getItem('robosim-claude-api-key');
+  // Check localStorage as fallback (for development convenience)
+  storedApiKey = localStorage.getItem(STORAGE_CONFIG.KEYS.CLAUDE_API_KEY);
   return storedApiKey;
+}
+
+/**
+ * Clear stored API key from both memory and localStorage
+ */
+export function clearClaudeApiKey(): void {
+  storedApiKey = null;
+  localStorage.removeItem(STORAGE_CONFIG.KEYS.CLAUDE_API_KEY);
 }

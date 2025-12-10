@@ -297,6 +297,33 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 - **Motion Plan Parsing** - AI converts instructions to robot waypoints
 - **Export Ready** - Direct LeRobot v3.0 format with images + language
 
+### Chat → Training Data (NEW)
+- **Live Recording from Chat** - Every chat command becomes a labeled training episode
+- **Auto-Record Mode** - Automatically captures demonstrations as you chat
+- **Session Management** - Start/stop recording sessions with full control
+- **Quality Metrics** - Real-time smoothness, velocity, and duration tracking
+- **Success/Fail Labeling** - Mark episodes for filtering during training
+- **Language Instructions** - Chat messages become language labels automatically
+- **Natural Demonstrations** - Create diverse data through natural conversation
+
+### Guided Teleoperation Recording (NEW)
+- **Task Templates** - Pre-defined tasks: Pick & Place, Stacking, Pushing, Waypoint Navigation
+- **Step-by-Step Visual Guides** - 3D overlays show target positions, arrows, and ghost gripper
+- **Real-Time Quality Indicators** - Smoothness score, velocity tracking, duration monitoring
+- **Automatic Language Generation** - Task templates include varied language instructions
+- **Keyboard/Gamepad Teleoperation** - WASD + gamepad support for smoother demonstrations
+  - Keyboard: WASD (base/shoulder), QE (elbow), RF (wrist), ZXC (gripper/roll)
+  - Gamepad: Left stick (base/shoulder), Right stick (elbow/wrist), Triggers (gripper)
+- **Quality Scoring** - Episodes rated as excellent/good/acceptable/poor
+- **Dataset Statistics Dashboard** - Comprehensive analysis before export
+
+### Enhanced Teleoperation for Dataset Collection
+- **Smooth Acceleration** - Cubic easing for natural robot motion
+- **Configurable Speed** - Shift to speed up, Ctrl to slow down
+- **Preset Positions** - H for home, G for ready position
+- **Dead Zone Control** - Adjustable gamepad sensitivity
+- **Visual Feedback** - Active joint highlighting during control
+
 ### HuggingFace Hub Integration (NEW)
 - **Direct Upload** - Push datasets to HuggingFace without CLI
 - **Token Authentication** - Secure API token validation

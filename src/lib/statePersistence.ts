@@ -14,6 +14,11 @@ import type {
   HumanoidState,
   ActiveRobotType,
 } from '../types';
+import { generateSecureId } from './crypto';
+import { STORAGE_CONFIG } from './config';
+import { loggers } from './logger';
+
+const log = loggers.state;
 
 // Saved state interface
 export interface SavedState {
@@ -42,29 +47,20 @@ export interface SaveSlotMeta {
   preview?: string; // Screenshot thumbnail base64
 }
 
-// Storage constants
-const STORAGE_VERSION = '1.0.0';
-const DB_NAME = 'robosim-saves';
-const DB_STORE = 'states';
-const SLOTS_KEY = 'robosim-save-slots';
-const AUTOSAVE_KEY = 'robosim-autosave';
-const MAX_SLOTS = 10;
-const AUTOSAVE_INTERVAL = 30000; // 30 seconds
-
 /**
  * Open IndexedDB database
  */
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(STORAGE_CONFIG.DB_NAME, 1);
 
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(DB_STORE)) {
-        db.createObjectStore(DB_STORE, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(STORAGE_CONFIG.DB_STORE)) {
+        db.createObjectStore(STORAGE_CONFIG.DB_STORE, { keyPath: 'id' });
       }
     };
   });
@@ -75,7 +71,7 @@ function openDatabase(): Promise<IDBDatabase> {
  */
 export function getSaveSlots(): SaveSlotMeta[] {
   try {
-    const stored = localStorage.getItem(SLOTS_KEY);
+    const stored = localStorage.getItem(STORAGE_CONFIG.KEYS.SAVE_SLOTS);
     if (!stored) return [];
     return JSON.parse(stored) as SaveSlotMeta[];
   } catch {
@@ -87,14 +83,7 @@ export function getSaveSlots(): SaveSlotMeta[] {
  * Update save slot metadata
  */
 function updateSlotMeta(slots: SaveSlotMeta[]): void {
-  localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
-}
-
-/**
- * Generate unique ID
- */
-function generateId(): string {
-  return `save_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  localStorage.setItem(STORAGE_CONFIG.KEYS.SAVE_SLOTS, JSON.stringify(slots));
 }
 
 /**
@@ -109,15 +98,15 @@ export async function saveState(
 
   const savedState: SavedState = {
     ...state,
-    id: slotId || generateId(),
+    id: slotId || generateSecureId('save'),
     name,
     timestamp: Date.now(),
-    version: STORAGE_VERSION,
+    version: STORAGE_CONFIG.STORAGE_VERSION,
   };
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([DB_STORE], 'readwrite');
-    const store = transaction.objectStore(DB_STORE);
+    const transaction = db.transaction([STORAGE_CONFIG.DB_STORE], 'readwrite');
+    const store = transaction.objectStore(STORAGE_CONFIG.DB_STORE);
 
     const request = store.put(savedState);
 
@@ -139,10 +128,10 @@ export async function saveState(
       } else {
         // Add new slot, remove oldest if over limit
         slots.unshift(meta);
-        if (slots.length > MAX_SLOTS) {
+        if (slots.length > STORAGE_CONFIG.MAX_SAVE_SLOTS) {
           const removed = slots.pop();
           if (removed) {
-            deleteState(removed.id).catch(console.error);
+            deleteState(removed.id).catch(err => log.error('Failed to delete old save slot', err));
           }
         }
       }
@@ -162,8 +151,8 @@ export async function loadState(slotId: string): Promise<SavedState | null> {
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([DB_STORE], 'readonly');
-    const store = transaction.objectStore(DB_STORE);
+    const transaction = db.transaction([STORAGE_CONFIG.DB_STORE], 'readonly');
+    const store = transaction.objectStore(STORAGE_CONFIG.DB_STORE);
 
     const request = store.get(slotId);
 
@@ -182,8 +171,8 @@ export async function deleteState(slotId: string): Promise<void> {
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([DB_STORE], 'readwrite');
-    const store = transaction.objectStore(DB_STORE);
+    const transaction = db.transaction([STORAGE_CONFIG.DB_STORE], 'readwrite');
+    const store = transaction.objectStore(STORAGE_CONFIG.DB_STORE);
 
     const request = store.delete(slotId);
 
@@ -208,11 +197,11 @@ export function autoSave(state: Omit<SavedState, 'id' | 'timestamp' | 'version' 
       id: 'autosave',
       name: 'Auto-save',
       timestamp: Date.now(),
-      version: STORAGE_VERSION,
+      version: STORAGE_CONFIG.STORAGE_VERSION,
     };
-    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(savedState));
+    localStorage.setItem(STORAGE_CONFIG.KEYS.AUTOSAVE, JSON.stringify(savedState));
   } catch (e) {
-    console.warn('Auto-save failed:', e);
+    log.warn('Auto-save failed', e);
   }
 }
 
@@ -221,7 +210,7 @@ export function autoSave(state: Omit<SavedState, 'id' | 'timestamp' | 'version' 
  */
 export function loadAutoSave(): SavedState | null {
   try {
-    const stored = localStorage.getItem(AUTOSAVE_KEY);
+    const stored = localStorage.getItem(STORAGE_CONFIG.KEYS.AUTOSAVE);
     if (!stored) return null;
     return JSON.parse(stored) as SavedState;
   } catch {
@@ -233,14 +222,14 @@ export function loadAutoSave(): SavedState | null {
  * Clear auto-save
  */
 export function clearAutoSave(): void {
-  localStorage.removeItem(AUTOSAVE_KEY);
+  localStorage.removeItem(STORAGE_CONFIG.KEYS.AUTOSAVE);
 }
 
 /**
  * Check if auto-save exists
  */
 export function hasAutoSave(): boolean {
-  return localStorage.getItem(AUTOSAVE_KEY) !== null;
+  return localStorage.getItem(STORAGE_CONFIG.KEYS.AUTOSAVE) !== null;
 }
 
 /**
@@ -278,7 +267,7 @@ export function importStateFromFile(file: File): Promise<SavedState> {
         }
 
         // Generate new ID to avoid conflicts
-        state.id = generateId();
+        state.id = generateSecureId('save');
         state.timestamp = Date.now();
 
         resolve(state);
@@ -293,7 +282,7 @@ export function importStateFromFile(file: File): Promise<SavedState> {
 }
 
 /**
- * Auto-save manager class
+ * Auto-save manager class with proper cleanup
  */
 export class AutoSaveManager {
   private intervalId: number | null = null;
@@ -306,7 +295,7 @@ export class AutoSaveManager {
     this.getState = getState;
   }
 
-  start(intervalMs: number = AUTOSAVE_INTERVAL): void {
+  start(intervalMs: number = STORAGE_CONFIG.AUTOSAVE_INTERVAL_MS): void {
     if (this.intervalId) this.stop();
 
     this.enabled = true;
@@ -318,6 +307,7 @@ export class AutoSaveManager {
 
     // Initial save
     autoSave(this.getState());
+    log.debug('Auto-save manager started', { intervalMs });
   }
 
   stop(): void {
@@ -325,6 +315,7 @@ export class AutoSaveManager {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
+      log.debug('Auto-save manager stopped');
     }
   }
 
@@ -334,6 +325,11 @@ export class AutoSaveManager {
 
   isRunning(): boolean {
     return this.enabled && this.intervalId !== null;
+  }
+
+  /** Cleanup method for use in useEffect cleanup */
+  destroy(): void {
+    this.stop();
   }
 }
 
@@ -369,8 +365,8 @@ export function getStorageInfo(): { used: number; available: number } {
     }
   }
 
-  // Rough estimate of available space (5MB typical localStorage limit)
-  const available = 5 * 1024 * 1024 - used;
+  // Calculate available space based on configured limit
+  const available = STORAGE_CONFIG.MAX_LOCAL_STORAGE_SIZE - used;
 
   return { used, available: Math.max(0, available) };
 }

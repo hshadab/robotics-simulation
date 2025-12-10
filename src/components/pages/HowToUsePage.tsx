@@ -3,7 +3,8 @@ import {
   Bot, ArrowLeft, Gamepad2, Mic, Eye, Hand, Brain, Code, Download,
   Keyboard, Mouse, Settings, Play, Save, Database, Box, ChevronDown,
   ChevronRight, Layers, Target, Video, HelpCircle, Monitor,
-  Zap, CheckCircle, Lightbulb, BookOpen, ArrowRight, Star
+  Zap, CheckCircle, Lightbulb, BookOpen, ArrowRight, Star,
+  MessageSquare, BarChart3
 } from 'lucide-react';
 
 interface HowToUsePageProps {
@@ -1797,6 +1798,155 @@ export const HowToUsePage: React.FC<HowToUsePageProps> = ({ onBack, onGetStarted
                     <div className="mt-3 p-2 bg-slate-800/50 rounded text-xs text-slate-400">
                       <strong>Augmentations applied:</strong> Action noise, time stretching, spatial jitter, and visual randomization
                       for better sim-to-real transfer.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chat → Training Data (NEW) */}
+                <div className="bg-slate-900/50 border-2 border-emerald-500/30 p-6">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-emerald-400" />
+                    Chat → Training Data (NEW)
+                  </h3>
+                  <p className="text-slate-300 mb-4">
+                    Turn natural language commands into labeled training episodes. Every chat message you send becomes a demonstration with automatic language annotations.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-slate-800/50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-emerald-300 mb-2">Auto-Record Mode</h4>
+                      <p className="text-slate-400 text-sm">Enable auto-record and the system captures every chat command as a training episode automatically. No manual start/stop needed.</p>
+                    </div>
+                    <div className="bg-slate-800/50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-emerald-300 mb-2">Language Labels</h4>
+                      <p className="text-slate-400 text-sm">Your chat messages become language_instruction labels in the dataset - perfect for training RT-1, OpenVLA, or other language-conditioned models.</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-lg">
+                    <h4 className="font-semibold text-emerald-300 mb-2">How to Use:</h4>
+                    <ol className="list-decimal list-inside text-slate-300 text-sm space-y-1">
+                      <li>Open <strong>Data tab → Chat Recording Panel</strong></li>
+                      <li>Enable <strong>Auto-Record</strong> toggle</li>
+                      <li>Chat naturally: "Pick up the red block", "Move it to the left"</li>
+                      <li>Each command is recorded with quality metrics</li>
+                      <li>Export when ready - all episodes include language annotations</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* Guided Teleoperation Recording (NEW) */}
+                <div className="bg-slate-900/50 border-2 border-violet-500/30 p-6">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-violet-400" />
+                    Guided Teleoperation Recording (NEW)
+                  </h3>
+                  <p className="text-slate-300 mb-4">
+                    Record high-quality demonstrations with visual guidance. Task templates show you exactly where to move, with real-time quality feedback.
+                  </p>
+
+                  {/* Task Templates */}
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-violet-300 mb-2">Task Templates</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {['Pick & Place', 'Stack Objects', 'Push to Target', 'Waypoint Path'].map((task) => (
+                        <div key={task} className="bg-violet-500/10 border border-violet-500/30 p-2 rounded text-center text-sm text-violet-200">
+                          {task}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 3D Visual Guides */}
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-violet-300 mb-2">3D Visual Guides</h4>
+                    <div className="grid md:grid-cols-3 gap-3">
+                      <div className="bg-slate-800/50 p-3 rounded-lg text-center">
+                        <div className="text-2xl mb-1">🎯</div>
+                        <p className="text-white text-sm font-medium">Target Markers</p>
+                        <p className="text-slate-400 text-xs">Pulsing indicators show where to go</p>
+                      </div>
+                      <div className="bg-slate-800/50 p-3 rounded-lg text-center">
+                        <div className="text-2xl mb-1">👻</div>
+                        <p className="text-white text-sm font-medium">Ghost Gripper</p>
+                        <p className="text-slate-400 text-xs">Semi-transparent target pose overlay</p>
+                      </div>
+                      <div className="bg-slate-800/50 p-3 rounded-lg text-center">
+                        <div className="text-2xl mb-1">➡️</div>
+                        <p className="text-white text-sm font-medium">Direction Arrows</p>
+                        <p className="text-slate-400 text-xs">Arrows guide you to the target</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quality Metrics */}
+                  <div className="mb-4">
+                    <h4 className="font-semibold text-violet-300 mb-2">Real-Time Quality Metrics</h4>
+                    <div className="grid md:grid-cols-4 gap-2">
+                      <div className="bg-slate-800/50 p-2 rounded text-center">
+                        <p className="text-green-400 font-bold text-lg">85%</p>
+                        <p className="text-slate-400 text-xs">Smoothness</p>
+                      </div>
+                      <div className="bg-slate-800/50 p-2 rounded text-center">
+                        <p className="text-blue-400 font-bold text-lg">12.3</p>
+                        <p className="text-slate-400 text-xs">Avg Velocity</p>
+                      </div>
+                      <div className="bg-slate-800/50 p-2 rounded text-center">
+                        <p className="text-yellow-400 font-bold text-lg">4.2s</p>
+                        <p className="text-slate-400 text-xs">Duration</p>
+                      </div>
+                      <div className="bg-slate-800/50 p-2 rounded text-center">
+                        <p className="text-purple-400 font-bold text-lg">Good</p>
+                        <p className="text-slate-400 text-xs">Quality Level</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="bg-violet-500/10 border border-violet-500/30 p-4 rounded-lg">
+                    <h4 className="font-semibold text-violet-300 mb-2">Enhanced Teleoperation Controls</h4>
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-white font-medium mb-1">Keyboard</p>
+                        <p className="text-slate-400">WASD (base/shoulder), QE (elbow), RF (wrist), ZXC (gripper)</p>
+                        <p className="text-slate-500 text-xs mt-1">Hold Shift for faster, Ctrl for slower movement</p>
+                      </div>
+                      <div>
+                        <p className="text-white font-medium mb-1">Gamepad</p>
+                        <p className="text-slate-400">Left stick (base/shoulder), Right stick (elbow/wrist), Triggers (gripper)</p>
+                        <p className="text-slate-500 text-xs mt-1">Smooth acceleration with configurable dead zones</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dataset Statistics Dashboard (NEW) */}
+                <div className="bg-slate-900/50 border-2 border-amber-500/30 p-6">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-amber-400" />
+                    Dataset Statistics Dashboard (NEW)
+                  </h3>
+                  <p className="text-slate-300 mb-4">
+                    Analyze your dataset quality before export with comprehensive statistics and LeRobot readiness checks.
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-slate-800/50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-amber-300 mb-2">Statistics Tracked</h4>
+                      <ul className="text-slate-400 text-sm space-y-1">
+                        <li>• Episode count & success rate</li>
+                        <li>• Frame distribution histogram</li>
+                        <li>• Duration statistics (min/max/avg)</li>
+                        <li>• Quality metrics (smoothness, jerk)</li>
+                        <li>• Language instruction coverage</li>
+                      </ul>
+                    </div>
+                    <div className="bg-slate-800/50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-amber-300 mb-2">LeRobot Readiness Checks</h4>
+                      <ul className="text-slate-400 text-sm space-y-1">
+                        <li>• Minimum 10 episodes required</li>
+                        <li>• Success rate above 50%</li>
+                        <li>• Consistent frame counts</li>
+                        <li>• Language instructions present</li>
+                        <li>• Auto-recommendations for improvement</li>
+                      </ul>
                     </div>
                   </div>
                 </div>

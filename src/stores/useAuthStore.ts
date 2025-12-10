@@ -22,6 +22,9 @@ import {
   TIER_LIMITS,
   checkFeatureAccess,
 } from '../lib/supabase';
+import { loggers } from '../lib/logger';
+
+const log = loggers.state;
 
 interface AuthState {
   // Auth state
@@ -114,7 +117,7 @@ export const useAuthStore = create<AuthState>()(
             }
           });
         } catch (error) {
-          console.error('Auth initialization error:', error);
+          log.error('Auth initialization error', error);
           set({ isLoading: false, error: 'Failed to initialize authentication' });
         }
       },
@@ -213,11 +216,15 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        const mockUser = {
+        // Create a minimal mock user that satisfies the User interface requirements
+        const mockUser: User = {
           id: 'mock-user-id',
           email,
           user_metadata: { full_name: email.split('@')[0] },
-        } as unknown as User;
+          app_metadata: {},
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        };
 
         const mockProfile: UserProfile = {
           id: 'mock-user-id',
@@ -262,7 +269,7 @@ export const useAuthStore = create<AuthState>()(
           const profile = await getUserProfile(user.id);
           set({ profile });
         } catch (error) {
-          console.error('Failed to refresh profile:', error);
+          log.error('Failed to refresh profile', error);
         }
       },
 

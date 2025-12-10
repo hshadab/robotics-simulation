@@ -21,3 +21,4 @@ export { WheeledRobot3D } from './WheeledRobot3D';
 export { Drone3D } from './Drone3D';
 export { DEFAULT_DRONE_STATE, DRONE_CONFIG, DEFAULT_HUMANOID_STATE, WHEELED_ROBOT_CONFIG } from './defaults';
 export { URDFViewer3D, URDFImporter, SAMPLE_URDF } from './URDFViewer';
+export { TeleoperationGuide3D } from './TeleoperationGuide3D';

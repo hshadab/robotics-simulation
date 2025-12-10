@@ -29,6 +29,8 @@ import {
 } from '../config/environments';
 import { DEFAULT_HUMANOID_STATE } from '../components/simulation/defaults';
 import { preventSelfCollision } from '../lib/selfCollision';
+import { generateSecureId } from '../lib/crypto';
+import { CONSOLE_CONFIG } from '../lib/config';
 
 interface AppState {
   // Robot State
@@ -339,7 +341,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   spawnObject: (obj: Omit<SimObject, 'id'>) => {
     const newObj: SimObject = {
       ...obj,
-      id: `obj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateSecureId('obj'),
     };
     set((state) => ({
       objects: [...state.objects, newObj],
@@ -520,13 +522,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Console Actions
   addConsoleMessage: (type: ConsoleMessageType, message: string) => {
     const newMessage: ConsoleMessage = {
-      id: `console-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateSecureId('console'),
       type,
       message,
       timestamp: new Date(),
     };
     set((state) => ({
-      consoleMessages: [...state.consoleMessages, newMessage].slice(-100), // Keep last 100 messages
+      consoleMessages: [...state.consoleMessages, newMessage].slice(-CONSOLE_CONFIG.MAX_MESSAGES),
     }));
   },
 
