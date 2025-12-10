@@ -69,6 +69,7 @@ import { HuggingFaceUploadPanel } from './HuggingFaceUploadPanel';
 import { ImageTo3DPanel } from './ImageTo3DPanel';
 import { ObjectLibraryPanel } from './ObjectLibraryPanel';
 import { LLMRecordingPanel } from './LLMRecordingPanel';
+import { QuickTrainPanel } from './QuickTrainPanel';
 import { SensorPanel } from '../simulation/SensorPanel';
 import { useAppStore } from '../../stores/useAppStore';
 
@@ -276,11 +277,19 @@ export const ConsolidatedToolsPanel: React.FC<ConsolidatedToolsPanelProps> = ({
 
         {activeCategory === 'data' && (
           <>
-            {/* Dataset Recorder - Primary */}
+            {/* Quick Train - Streamlined Flow */}
+            <QuickTrainPanel />
+
+            {/* Advanced Data Tools */}
+            <div className="mt-4 pt-4 border-t border-slate-700/50">
+              <p className="text-xs text-slate-500 mb-3 px-1">Advanced Tools</p>
+            </div>
+
+            {/* Dataset Recorder */}
             <CollapsibleSection
-              title="Record Dataset"
+              title="Manual Recording"
               icon={<Database className="w-4 h-4" />}
-              defaultOpen={true}
+              defaultOpen={false}
             >
               <DatasetRecorderPanel />
             </CollapsibleSection>

@@ -44,3 +44,5 @@ export { LLMRecordingPanel } from './LLMRecordingPanel';
 export { GuidedRecorderPanel } from './GuidedRecorder';
 export { DatasetStatsDashboard } from './DatasetStats';
 export { ChatRecordingPanel } from './ChatRecordingPanel';
+// Quick Train (Streamlined Flow)
+export { QuickTrainPanel } from './QuickTrainPanel';
