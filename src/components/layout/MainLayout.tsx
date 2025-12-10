@@ -2,10 +2,12 @@ import React, { useState, useCallback } from 'react';
 import { SimulationViewport } from '../simulation';
 import { ChatPanel } from '../chat';
 import { JointControls, ShareButton, ConsolidatedToolsPanel } from '../controls';
+import { MinimalTrainFlow } from '../controls/MinimalTrainFlow';
+import { ToolsDrawer } from '../controls/ToolsDrawer';
 import { CodeEditor, ArduinoEmulatorPanel } from '../editor';
 import { ApiKeySettings } from '../settings/ApiKeySettings';
 import { FirstRunModal, useFirstRun } from '../onboarding/FirstRunModal';
-import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, PanelRightOpen, PanelRightClose, Brain, Database, Mic, Eye, Box, Sparkles, FileText, Clock, CheckCircle, AlertCircle, Menu, X, MessageSquare, Wrench } from 'lucide-react';
+import { Bot, Code, Gamepad2, BookOpen, LogOut, Play, Square, Save, Settings, Brain, Database, Mic, Eye, Box, Sparkles, FileText, Clock, CheckCircle, AlertCircle, Menu, X } from 'lucide-react';
 import { Button, Select } from '../common';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { useAppStore } from '../../stores/useAppStore';
@@ -256,23 +258,17 @@ interface SimulateTabProps {
 
 const SimulateTab: React.FC<SimulateTabProps> = ({ openTutorial }) => {
   const { setControlMode, setShowWorkspace } = useAppStore();
-  const [showToolsPanel, setShowToolsPanel] = useState(true);
   const [mobileTab, setMobileTab] = useState<MobileTab>('viewport');
   const [showChatDrawer, setShowChatDrawer] = useState(false);
   const [showToolsDrawer, setShowToolsDrawer] = useState(false);
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
 
-  // When openTutorial triggers, we could emit an event or set a global state
-  // For now, the TutorialPanel in ConsolidatedToolsPanel will handle its own visibility
+  // When openTutorial triggers
   React.useEffect(() => {
-    if (openTutorial) {
-      // Ensure tools panel is visible when tutorial is triggered
-      setShowToolsPanel(true);
-      if (isMobile) {
-        setShowToolsDrawer(true);
-        setMobileTab('tools');
-      }
+    if (openTutorial && isMobile) {
+      setShowToolsDrawer(true);
+      setMobileTab('tools');
     }
   }, [openTutorial, isMobile]);
 
@@ -346,85 +342,40 @@ const SimulateTab: React.FC<SimulateTabProps> = ({ openTutorial }) => {
     );
   }
 
-  // Tablet Layout - Single collapsible sidebar
+  // Tablet Layout - Same as desktop but narrower
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   if (isTablet) {
     return (
       <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
         <div className="h-full flex">
+          {/* Left: Minimal Train Flow */}
+          <div className="w-64 flex-shrink-0 border-r border-slate-700/50">
+            <MinimalTrainFlow onOpenDrawer={() => setDrawerOpen(true)} />
+          </div>
+
           {/* Center: 3D Simulation */}
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 min-h-0">
               <SimulationViewport />
             </div>
           </div>
-
-          {/* Right: Toggle between Chat and Tools */}
-          <div className={`flex-shrink-0 border-l border-slate-700/50 transition-all duration-300 ${showToolsPanel ? 'w-72' : 'w-12'}`}>
-            {showToolsPanel ? (
-              <div className="h-full flex flex-col">
-                {/* Toggle Header */}
-                <div className="flex items-center justify-between px-2 py-2 border-b border-slate-700/50 bg-slate-800/50">
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setMobileTab('chat')}
-                      className={`px-3 py-1.5 rounded text-sm font-medium transition ${
-                        mobileTab === 'chat' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'
-                      }`}
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setMobileTab('tools')}
-                      className={`px-3 py-1.5 rounded text-sm font-medium transition ${
-                        mobileTab === 'tools' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-700/50'
-                      }`}
-                    >
-                      <Wrench className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => setShowToolsPanel(false)}
-                    className="p-1 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded transition"
-                  >
-                    <PanelRightClose className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 overflow-hidden">
-                  {mobileTab === 'chat' ? (
-                    <ChatPanel />
-                  ) : (
-                    <ConsolidatedToolsPanel
-                      onModeChange={setControlMode}
-                      onShowWorkspace={setShowWorkspace}
-                    />
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center pt-2">
-                <button
-                  onClick={() => setShowToolsPanel(true)}
-                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded transition"
-                >
-                  <PanelRightOpen className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-          </div>
         </div>
+
+        {/* Slide-out Tools Drawer */}
+        <ToolsDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
       </div>
     );
   }
 
-  // Desktop Layout - Full 3-panel
+  // Desktop Layout - Minimal left panel + 3D + Drawer
+
   return (
     <div className="flex-1 overflow-hidden" style={{ height: 'calc(100vh - 48px)' }}>
       <div className="h-full flex">
-        {/* Left: AI Chat */}
-        <div className="w-80 flex-shrink-0 border-r border-slate-700/50 flex flex-col">
-          <ChatPanel />
+        {/* Left: Minimal Train Flow */}
+        <div className="w-72 flex-shrink-0 border-r border-slate-700/50">
+          <MinimalTrainFlow onOpenDrawer={() => setDrawerOpen(true)} />
         </div>
 
         {/* Center: 3D Simulation (takes remaining space) */}
@@ -433,49 +384,10 @@ const SimulateTab: React.FC<SimulateTabProps> = ({ openTutorial }) => {
             <SimulationViewport />
           </div>
         </div>
-
-        {/* Right: Consolidated Tools Panel */}
-        <div className={`flex-shrink-0 border-l border-slate-700/50 transition-all duration-300 ${showToolsPanel ? 'w-80' : 'w-12'}`}>
-          {showToolsPanel ? (
-            <div className="h-full flex flex-col">
-              {/* Panel Header */}
-              <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700/50 bg-slate-800/50">
-                <span className="text-sm font-medium text-slate-300">Tools</span>
-                <button
-                  onClick={() => setShowToolsPanel(false)}
-                  className="p-1 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded transition"
-                  title="Collapse panel"
-                >
-                  <PanelRightClose className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Consolidated Tools with Categorized Tabs */}
-              <div className="flex-1 overflow-hidden">
-                <ConsolidatedToolsPanel
-                  onModeChange={setControlMode}
-                  onShowWorkspace={setShowWorkspace}
-                />
-              </div>
-            </div>
-          ) : (
-            /* Collapsed state - just show expand button */
-            <div className="h-full flex flex-col items-center pt-2">
-              <button
-                onClick={() => setShowToolsPanel(true)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded transition"
-                title="Expand tools panel"
-              >
-                <PanelRightOpen className="w-5 h-5" />
-              </button>
-              {/* Vertical text hint */}
-              <div className="mt-4 writing-mode-vertical text-xs text-slate-600 tracking-widest" style={{ writingMode: 'vertical-rl' }}>
-                TOOLS
-              </div>
-            </div>
-          )}
-        </div>
       </div>
+
+      {/* Slide-out Tools Drawer */}
+      <ToolsDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </div>
   );
 };

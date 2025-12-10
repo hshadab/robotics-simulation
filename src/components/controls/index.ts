@@ -46,3 +46,6 @@ export { DatasetStatsDashboard } from './DatasetStats';
 export { ChatRecordingPanel } from './ChatRecordingPanel';
 // Quick Train (Streamlined Flow)
 export { QuickTrainPanel } from './QuickTrainPanel';
+// Minimal UI
+export { MinimalTrainFlow } from './MinimalTrainFlow';
+export { ToolsDrawer } from './ToolsDrawer';
