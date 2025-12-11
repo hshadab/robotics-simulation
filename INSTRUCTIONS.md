@@ -295,7 +295,11 @@ Control the robot using voice commands.
 |----------|----------|
 | Movement | "move left", "move right", "forward", "backward" |
 | Gripper | "open gripper", "close gripper", "grab", "release" |
-| Actions | "wave hello", "pick up the cube", "scan the area" |
+| Pick-up | "pick up the cube", "grab the red block", "pick up the ball" |
+| Stacking | "stack on the blue block", "place on the red cube" |
+| Move to | "move to the green ball", "go to the cylinder" |
+| Placing | "place", "put down", "drop" |
+| Actions | "wave hello", "scan the area", "dance" |
 | Positions | "go home", "reach forward", "move up" |
 
 **Usage:**
@@ -621,7 +625,7 @@ Natural language interface for robot control.
 
 | Robot | Example Commands |
 |-------|------------------|
-| Arm | "wave hello", "pick up object", "scan area", "go home" |
+| Arm | "wave hello", "pick up the cube", "stack on the blue block", "move to the red ball", "place", "go home" |
 | Wheeled | "drive forward", "turn around", "follow line", "stop" |
 | Drone | "take off", "hover", "fly forward", "land" |
 | Humanoid | "walk forward", "wave", "squat", "raise arms" |
