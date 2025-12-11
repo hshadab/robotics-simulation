@@ -121,8 +121,47 @@ const normalizeAngle = (angle: number): number => {
 };
 
 /**
+ * Internal forward kinematics for IK solver
+ * Computes gripper position from joint angles using simplified geometry
+ */
+const fkForIK = (base: number, shoulder: number, elbow: number, wrist: number): { x: number; y: number; z: number } => {
+  const dims = SO101_DIMS;
+  const baseRad = (base * Math.PI) / 180;
+  const shoulderRad = (shoulder * Math.PI) / 180;
+  const elbowRad = (elbow * Math.PI) / 180;
+  const wristRad = (wrist * Math.PI) / 180;
+
+  const shoulderHeight = dims.baseHeight + dims.link1Height + dims.link2Length;
+
+  // Compute arm extension in the local 2D plane (forward + up)
+  const angle1 = shoulderRad;
+  const elbowLocal = dims.link3Length * Math.sin(angle1);
+  const elbowUp = dims.link3Length * Math.cos(angle1);
+
+  const angle2 = angle1 + elbowRad;
+  const wristLocal = elbowLocal + dims.link4Length * Math.sin(angle2);
+  const wristUp = elbowUp + dims.link4Length * Math.cos(angle2);
+
+  const angle3 = angle2 + wristRad;
+  const gripperLen = dims.link5Length + dims.gripperLength;
+  const gripperLocal = wristLocal + gripperLen * Math.sin(angle3);
+  const gripperUp = wristUp + gripperLen * Math.cos(angle3);
+
+  // Total forward distance including shoulder offset
+  const forwardDist = dims.shoulderOffset + gripperLocal;
+
+  // Convert to world coordinates using base rotation
+  // base=0 means arm extends along +Z axis
+  const x = forwardDist * Math.sin(baseRad);
+  const z = forwardDist * Math.cos(baseRad);
+  const y = shoulderHeight + gripperUp;
+
+  return { x, y, z };
+};
+
+/**
  * Calculate inverse kinematics for SO-101 arm
- * Uses geometric approach for a 4-DOF arm (base, shoulder, elbow, wrist)
+ * Uses numerical grid search to find joint angles that reach the target position
  *
  * @param targetX - Target X position in meters
  * @param targetY - Target Y position in meters (height)
@@ -136,96 +175,74 @@ export const calculateInverseKinematics = (
   targetZ: number,
   currentJoints: JointState
 ): JointState | null => {
-  const dims = SO101_DIMS;
-
-  // Effective link lengths for IK calculation
-  const L1 = dims.link2Length; // Shoulder height
-  const L2 = dims.link3Length; // Upper arm
-  const L3 = dims.link4Length; // Forearm
-  const L4 = dims.link5Length + dims.gripperLength; // Wrist + gripper
-
-  // Base height (shoulder pivot point)
-  const baseY = dims.baseHeight + dims.link1Height + L1;
-
-  // Calculate base rotation (shoulder_pan) from X-Z position
-  const baseAngleRad = Math.atan2(-targetZ, targetX);
-  const baseAngle = normalizeAngle((baseAngleRad * 180) / Math.PI);
+  // Calculate base angle from target X-Z position
+  const baseAngle = Math.atan2(targetX, targetZ) * (180 / Math.PI);
 
   // Check base angle limits
   if (baseAngle < SO101_LIMITS.base.min || baseAngle > SO101_LIMITS.base.max) {
     return null;
   }
 
-  // Distance from base axis to target in the arm plane
-  const horizontalDist = Math.sqrt(targetX * targetX + targetZ * targetZ);
+  let bestSolution: { shoulder: number; elbow: number; wrist: number } | null = null;
+  let bestError = Infinity;
 
-  // Adjust for shoulder offset
-  const armPlaneDist = horizontalDist - dims.shoulderOffset - dims.shoulderLiftOffset;
-
-  // Height relative to shoulder pivot
-  const heightFromShoulder = targetY - baseY;
-
-  // Distance from shoulder to target (for 3-link IK: shoulder-elbow-wrist)
-  // We'll use wrist as end point, then add wrist angle for final positioning
-  const targetDist = Math.sqrt(armPlaneDist * armPlaneDist + heightFromShoulder * heightFromShoulder);
-
-  // Combined length of upper arm + forearm (for reachability check)
-  const maxReach = L2 + L3 + L4 * 0.5; // Allow some wrist bend
-  const minReach = Math.abs(L2 - L3) * 0.5;
-
-  if (targetDist > maxReach || targetDist < minReach) {
-    return null; // Target unreachable
+  // Coarse grid search
+  for (let shoulder = SO101_LIMITS.shoulder.min; shoulder <= SO101_LIMITS.shoulder.max; shoulder += 5) {
+    for (let elbow = SO101_LIMITS.elbow.min; elbow <= SO101_LIMITS.elbow.max; elbow += 5) {
+      for (let wrist = SO101_LIMITS.wrist.min; wrist <= SO101_LIMITS.wrist.max; wrist += 10) {
+        const pos = fkForIK(baseAngle, shoulder, elbow, wrist);
+        const error = Math.sqrt(
+          (pos.x - targetX) ** 2 +
+          (pos.y - targetY) ** 2 +
+          (pos.z - targetZ) ** 2
+        );
+        if (error < bestError) {
+          bestError = error;
+          bestSolution = { shoulder, elbow, wrist };
+        }
+      }
+    }
   }
 
-  // Angle from shoulder to target point
-  const targetAngle = Math.atan2(armPlaneDist, heightFromShoulder);
+  // Refine search around best solution
+  if (bestSolution && bestError < 0.05) {
+    const refineRange = 5;
+    const refineStep = 1;
+    for (let ds = -refineRange; ds <= refineRange; ds += refineStep) {
+      for (let de = -refineRange; de <= refineRange; de += refineStep) {
+        for (let dw = -refineRange; dw <= refineRange; dw += refineStep) {
+          const shoulder = clamp(bestSolution.shoulder + ds, SO101_LIMITS.shoulder.min, SO101_LIMITS.shoulder.max);
+          const elbow = clamp(bestSolution.elbow + de, SO101_LIMITS.elbow.min, SO101_LIMITS.elbow.max);
+          const wrist = clamp(bestSolution.wrist + dw, SO101_LIMITS.wrist.min, SO101_LIMITS.wrist.max);
 
-  // Use law of cosines for elbow angle
-  // For simplified 2-link IK: shoulder to elbow, elbow to wrist position
-  const wristTargetDist = Math.sqrt(
-    (armPlaneDist - L4 * 0.3) * (armPlaneDist - L4 * 0.3) +
-    heightFromShoulder * heightFromShoulder
-  );
-
-  // Elbow angle using law of cosines
-  const cosElbow = (L2 * L2 + L3 * L3 - wristTargetDist * wristTargetDist) / (2 * L2 * L3);
-  const clampedCosElbow = clamp(cosElbow, -1, 1);
-  const elbowAngleRad = Math.acos(clampedCosElbow);
-
-  // Shoulder angle
-  const cosAlpha = (L2 * L2 + wristTargetDist * wristTargetDist - L3 * L3) / (2 * L2 * wristTargetDist);
-  const clampedCosAlpha = clamp(cosAlpha, -1, 1);
-  const alphaRad = Math.acos(clampedCosAlpha);
-
-  // Final shoulder angle
-  const shoulderAngleRad = targetAngle - alphaRad;
-  const shoulderAngle = normalizeAngle((shoulderAngleRad * 180) / Math.PI);
-
-  // Elbow angle (interior angle to exterior)
-  const elbowAngle = normalizeAngle(180 - (elbowAngleRad * 180) / Math.PI);
-
-  // Wrist angle to keep gripper relatively level (or pointing at target)
-  const totalArmAngle = shoulderAngle + elbowAngle;
-  const wristAngle = clamp(-totalArmAngle * 0.3, SO101_LIMITS.wrist.min, SO101_LIMITS.wrist.max);
-
-  // Validate all angles are within limits
-  if (
-    shoulderAngle < SO101_LIMITS.shoulder.min ||
-    shoulderAngle > SO101_LIMITS.shoulder.max ||
-    elbowAngle < SO101_LIMITS.elbow.min ||
-    elbowAngle > SO101_LIMITS.elbow.max
-  ) {
-    return null;
+          const pos = fkForIK(baseAngle, shoulder, elbow, wrist);
+          const error = Math.sqrt(
+            (pos.x - targetX) ** 2 +
+            (pos.y - targetY) ** 2 +
+            (pos.z - targetZ) ** 2
+          );
+          if (error < bestError) {
+            bestError = error;
+            bestSolution = { shoulder, elbow, wrist };
+          }
+        }
+      }
+    }
   }
 
-  return {
-    base: clamp(baseAngle, SO101_LIMITS.base.min, SO101_LIMITS.base.max),
-    shoulder: clamp(shoulderAngle, SO101_LIMITS.shoulder.min, SO101_LIMITS.shoulder.max),
-    elbow: clamp(elbowAngle, SO101_LIMITS.elbow.min, SO101_LIMITS.elbow.max),
-    wrist: clamp(wristAngle, SO101_LIMITS.wrist.min, SO101_LIMITS.wrist.max),
-    wristRoll: currentJoints.wristRoll, // Preserve current wrist roll
-    gripper: currentJoints.gripper, // Preserve current gripper state
-  };
+  // Return solution if within 3cm tolerance
+  if (bestSolution && bestError < 0.03) {
+    return {
+      base: clamp(baseAngle, SO101_LIMITS.base.min, SO101_LIMITS.base.max),
+      shoulder: bestSolution.shoulder,
+      elbow: bestSolution.elbow,
+      wrist: bestSolution.wrist,
+      wristRoll: currentJoints.wristRoll,
+      gripper: currentJoints.gripper,
+    };
+  }
+
+  return null;
 };
 
 /**
