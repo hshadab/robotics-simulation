@@ -1,51 +1,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '../stores/useAppStore';
-import type { JointState, SimObject } from '../types';
+import type { SimObject } from '../types';
+import { calculateSO101GripperPosition } from '../components/simulation/SO101Kinematics';
 
 // Threshold for position updates (to avoid infinite loops)
 const POSITION_THRESHOLD = 0.001;
-
-// Calculate gripper tip position using forward kinematics
-const calculateGripperPosition = (joints: JointState): [number, number, number] => {
-  const baseRad = (joints.base * Math.PI) / 180;
-  const shoulderRad = (joints.shoulder * Math.PI) / 180;
-  const elbowRad = (joints.elbow * Math.PI) / 180;
-  const wristRad = (joints.wrist * Math.PI) / 180;
-
-  // Segment lengths (matching RobotArm3D)
-  const baseHeight = 0.12;
-  const upperArm = 0.1;
-  const forearm = 0.088;
-  const wrist = 0.045;
-  const gripper = 0.05;
-
-  // Calculate cumulative angles
-  const angle1 = shoulderRad;
-  const angle2 = angle1 + elbowRad;
-  const angle3 = angle2 + wristRad;
-
-  // Forward kinematics
-  let x = 0;
-  let y = baseHeight;
-  let z = 0;
-
-  // Upper arm
-  x += upperArm * Math.sin(angle1) * Math.cos(-baseRad);
-  y += upperArm * Math.cos(angle1);
-  z += upperArm * Math.sin(angle1) * Math.sin(-baseRad);
-
-  // Forearm
-  x += forearm * Math.sin(angle2) * Math.cos(-baseRad);
-  y += forearm * Math.cos(angle2);
-  z += forearm * Math.sin(angle2) * Math.sin(-baseRad);
-
-  // Wrist + gripper
-  x += (wrist + gripper) * Math.sin(angle3) * Math.cos(-baseRad);
-  y += (wrist + gripper) * Math.cos(angle3);
-  z += (wrist + gripper) * Math.sin(angle3) * Math.sin(-baseRad);
-
-  return [x, y, z];
-};
 
 // Calculate distance between two 3D points
 const distance3D = (
@@ -94,7 +53,7 @@ export const useGripperInteraction = () => {
     // Get current state directly from store to avoid dependency issues
     const { objects, targetZones, challengeState } = useAppStore.getState();
 
-    const gripperPos = calculateGripperPosition(joints);
+    const gripperPos = calculateSO101GripperPosition(joints);
     const gripperClosed = joints.gripper < 30;
     const wasClosing = prevGripperRef.current >= 30 && joints.gripper < 30;
     const wasOpening = prevGripperRef.current <= 70 && joints.gripper > 70;

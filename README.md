@@ -350,6 +350,32 @@ A web-based 3D robotics simulation platform built with React, Three.js, and Rapi
 - **Step-Based Wizard** - Clear progression: Add Object → Demo → Generate → Upload
 - **Distraction-Free** - Focus on the task, not the UI
 
+### Physics Simulation Realism (NEW)
+
+RoboSim implements several features to ensure training data transfers well to real robots:
+
+#### Inverse Kinematics-Based Motion
+- **IK Pick-up Sequences** - Commands like "pick up the cube" use real inverse kinematics instead of hardcoded heuristics
+- **Approach/Grasp/Lift Planning** - Each pick-up calculates three IK solutions (approach, grasp, lift) for smooth trajectories
+- **Fallback Mode** - If IK fails (unreachable position), gracefully falls back to heuristic control
+- **Single FK Source** - All gripper position calculations use the official SO-101 URDF parameters
+
+#### Realistic Motor Dynamics
+- **Velocity-Limited Motion** - Joints respect the STS3215 servo's 180°/s maximum velocity
+- **Rise Time Simulation** - 150ms first-order response matching real servo behavior
+- **S-Curve Easing** - Quintic S-curve (not cubic) for smooth acceleration/deceleration
+- **Minimum Duration Enforcement** - Large movements automatically take longer (velocity-limited)
+
+#### Why This Matters for Sim-to-Real
+| Feature | Before | After | Real Robot |
+|---------|--------|-------|------------|
+| Joint velocity | Instant | 180°/s max | 180°/s max ✓ |
+| Motion profile | Cubic ease | S-curve | S-curve ✓ |
+| Pick-up planning | Heuristic | IK-based | IK-based ✓ |
+| FK accuracy | Hardcoded | URDF-derived | URDF-derived ✓ |
+
+Training data generated with these improvements will transfer better to real SO-101 hardware because the simulated trajectories match what the real servos can actually achieve.
+
 ## Tech Stack
 
 - **Frontend**: React 18, TypeScript

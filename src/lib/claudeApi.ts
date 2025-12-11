@@ -9,6 +9,7 @@ import { SYSTEM_PROMPTS } from '../hooks/useLLMChat';
 import { generateSemanticState } from './semanticState';
 import { API_CONFIG, STORAGE_CONFIG } from './config';
 import { loggers } from './logger';
+import { calculateInverseKinematics } from '../components/simulation/SO101Kinematics';
 
 const log = loggers.claude;
 
@@ -458,69 +459,107 @@ function handlePickUpCommand(
   }
 
   const [objX, objY, objZ] = targetObject.position;
-  const baseAngle = calculateBaseAngleForPosition(objX, objZ);
   const objName = targetObject.name || targetObject.id;
 
   // Calculate horizontal distance from robot base to object
   const distance = Math.sqrt(objX * objX + objZ * objZ);
 
-  console.log(`[handlePickUpCommand] Pick up "${objName}": pos=[${objX.toFixed(3)}, ${objY.toFixed(3)}, ${objZ.toFixed(3)}], distance=${distance.toFixed(3)}m, baseAngle=${baseAngle.toFixed(1)}°`);
+  console.log(`[handlePickUpCommand] Pick up "${objName}": pos=[${objX.toFixed(3)}, ${objY.toFixed(3)}, ${objZ.toFixed(3)}], distance=${distance.toFixed(3)}m`);
 
-  // SO-101 arm segment lengths (approximate):
-  // - Upper arm (shoulder to elbow): ~10cm
-  // - Forearm (elbow to wrist): ~10cm
-  // - Total reach: ~20cm
+  // Default joint state for IK calculations
+  const defaultJoints: JointState = {
+    base: 0,
+    shoulder: 0,
+    elbow: 0,
+    wrist: 0,
+    wristRoll: 0,
+    gripper: 100,
+  };
 
-  // Calculate joint angles based on distance and height
-  let approachShoulder: number;
-  let lowerShoulder: number;
-  let lowerElbow: number;
+  // Use inverse kinematics to calculate joint angles
+  // Approach position: slightly above and behind the object
+  const approachHeight = Math.max(objY + 0.08, 0.15); // At least 8cm above object
+  const approachIK = calculateInverseKinematics(objX, approachHeight, objZ, defaultJoints);
 
-  if (distance < 0.12) {
-    // Very close - need to reach down more vertically
-    approachShoulder = 20;
-    lowerShoulder = -40;
-    lowerElbow = -110;
-  } else if (distance < 0.18) {
-    // Medium distance - balanced reach
-    approachShoulder = 35;
-    lowerShoulder = -25;
-    lowerElbow = -95;
-  } else {
-    // Far - extend more horizontally
-    approachShoulder = 50;
-    lowerShoulder = -10;
-    lowerElbow = -75;
+  // Grasp position: at object height (gripper tip should reach object center)
+  const graspHeight = objY + 0.02; // Slightly above object center for gripper geometry
+  const graspIK = calculateInverseKinematics(objX, graspHeight, objZ, defaultJoints);
+
+  // Lift position: above grasp position
+  const liftHeight = Math.max(objY + 0.12, 0.18);
+  const liftIK = calculateInverseKinematics(objX, liftHeight, objZ, defaultJoints);
+
+  console.log('[handlePickUpCommand] IK solutions:', {
+    approach: approachIK ? `base=${approachIK.base.toFixed(1)}°, shoulder=${approachIK.shoulder.toFixed(1)}°, elbow=${approachIK.elbow.toFixed(1)}°` : 'FAILED',
+    grasp: graspIK ? `base=${graspIK.base.toFixed(1)}°, shoulder=${graspIK.shoulder.toFixed(1)}°, elbow=${graspIK.elbow.toFixed(1)}°` : 'FAILED',
+    lift: liftIK ? `base=${liftIK.base.toFixed(1)}°, shoulder=${liftIK.shoulder.toFixed(1)}°, elbow=${liftIK.elbow.toFixed(1)}°` : 'FAILED',
+  });
+
+  // If IK fails, fall back to heuristic approach
+  if (!approachIK || !graspIK || !liftIK) {
+    console.log('[handlePickUpCommand] IK failed, using heuristic fallback');
+    const baseAngle = calculateBaseAngleForPosition(objX, objZ);
+
+    // Heuristic fallback based on distance
+    let approachShoulder: number;
+    let lowerShoulder: number;
+    let lowerElbow: number;
+
+    if (distance < 0.12) {
+      approachShoulder = 20;
+      lowerShoulder = -40;
+      lowerElbow = -90;
+    } else if (distance < 0.18) {
+      approachShoulder = 35;
+      lowerShoulder = -25;
+      lowerElbow = -80;
+    } else {
+      approachShoulder = 50;
+      lowerShoulder = -10;
+      lowerElbow = -60;
+    }
+
+    // Adjust for object height
+    if (objY > 0.08) {
+      lowerShoulder += 15;
+      lowerElbow += 20;
+    }
+
+    return {
+      action: 'sequence',
+      joints: [
+        { gripper: 100 },
+        { base: baseAngle },
+        { shoulder: approachShoulder, elbow: -30 },
+        { shoulder: lowerShoulder, elbow: lowerElbow },
+        { gripper: 0 },
+        { shoulder: 30, elbow: -45 },
+      ],
+      description: `Picking up "${objName}" (heuristic mode) at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}]`,
+      code: `// Pick up "${objName}" (heuristic)\nawait openGripper();\nawait moveJoint('base', ${baseAngle.toFixed(0)});\nawait closeGripper();`,
+    };
   }
 
-  // Adjust for object height (Y)
-  if (objY > 0.08) {
-    lowerShoulder += 15;
-    lowerElbow += 20;
-  }
-
-  console.log(`[handlePickUpCommand] Calculated joints: approach=${approachShoulder}°, lower=${lowerShoulder}°, elbow=${lowerElbow}°`);
-
+  // Build IK-based pick-up sequence
   return {
     action: 'sequence',
     joints: [
       { gripper: 100 }, // Open gripper wide
-      { base: baseAngle }, // Rotate to face object
-      { shoulder: approachShoulder, elbow: -30 }, // Raise and extend toward object
-      { shoulder: lowerShoulder, elbow: lowerElbow }, // Lower to grasp height
+      { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist }, // Move to approach position
+      { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist }, // Lower to grasp position
       { gripper: 0 }, // Close gripper
-      { shoulder: 30, elbow: -45 }, // Lift object up
+      { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist }, // Lift object
     ],
-    description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] (distance: ${(distance * 100).toFixed(0)}cm)`,
-    code: `// Pick up "${objName}"
+    description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] using IK (distance: ${(distance * 100).toFixed(0)}cm)`,
+    code: `// Pick up "${objName}" using inverse kinematics
 await openGripper();
-await moveJoint('base', ${baseAngle.toFixed(0)});
-await moveJoint('shoulder', ${approachShoulder});
-await moveJoint('elbow', -30);
-await moveJoint('shoulder', ${lowerShoulder});
-await moveJoint('elbow', ${lowerElbow});
+// Approach position
+await moveJoints({ base: ${approachIK.base.toFixed(1)}, shoulder: ${approachIK.shoulder.toFixed(1)}, elbow: ${approachIK.elbow.toFixed(1)}, wrist: ${approachIK.wrist.toFixed(1)} });
+// Grasp position
+await moveJoints({ base: ${graspIK.base.toFixed(1)}, shoulder: ${graspIK.shoulder.toFixed(1)}, elbow: ${graspIK.elbow.toFixed(1)}, wrist: ${graspIK.wrist.toFixed(1)} });
 await closeGripper();
-await moveJoint('shoulder', 30);`,
+// Lift position
+await moveJoints({ base: ${liftIK.base.toFixed(1)}, shoulder: ${liftIK.shoulder.toFixed(1)}, elbow: ${liftIK.elbow.toFixed(1)}, wrist: ${liftIK.wrist.toFixed(1)} });`,
   };
 }
 

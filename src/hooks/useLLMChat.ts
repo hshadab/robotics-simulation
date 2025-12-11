@@ -88,15 +88,68 @@ export const useLLMChat = () => {
   const isAnimatingRef = useRef(isAnimating);
   isAnimatingRef.current = isAnimating;
 
+  // Motor dynamics constants (based on STS3215 servo specs)
+  const MOTOR_DYNAMICS = {
+    maxVelocityDegPerSec: 180, // Maximum joint velocity in degrees/second
+    riseTimeMs: 150,          // Time for servo to reach 63% of target (first-order response)
+    settlingTimeMs: 50,       // Additional settling time after reaching target
+    minDurationMs: 200,       // Minimum animation duration
+  };
+
+  /**
+   * S-curve easing function for more realistic motor motion
+   * Provides smooth acceleration and deceleration matching real servo behavior
+   */
+  const sCurveEase = (t: number): number => {
+    // Quintic S-curve: smooth start and end, constant velocity in middle
+    if (t < 0.5) {
+      return 16 * t * t * t * t * t;
+    }
+    return 1 - Math.pow(-2 * t + 2, 5) / 2;
+  };
+
+  /**
+   * Calculate realistic animation duration based on motor constraints
+   */
+  const calculateMotorDuration = (
+    startJoints: JointState,
+    targetJoints: Partial<JointState>,
+    requestedDuration: number
+  ): number => {
+    // Find the maximum angle change across all joints
+    let maxAngleChange = 0;
+    for (const joint of Object.keys(targetJoints) as (keyof JointState)[]) {
+      if (targetJoints[joint] !== undefined) {
+        const change = Math.abs((targetJoints[joint] as number) - startJoints[joint]);
+        maxAngleChange = Math.max(maxAngleChange, change);
+      }
+    }
+
+    // Calculate minimum duration based on max velocity
+    const minDurationFromVelocity = (maxAngleChange / MOTOR_DYNAMICS.maxVelocityDegPerSec) * 1000;
+
+    // Add rise time and settling time for realistic servo response
+    const realisticMinDuration = minDurationFromVelocity + MOTOR_DYNAMICS.riseTimeMs + MOTOR_DYNAMICS.settlingTimeMs;
+
+    // Use the larger of requested duration or realistic minimum
+    return Math.max(requestedDuration, realisticMinDuration, MOTOR_DYNAMICS.minDurationMs);
+  };
+
   const animateToJoints = useCallback(
-    (targetJoints: Partial<JointState>, duration = 600): Promise<void> => {
+    (targetJoints: Partial<JointState>, requestedDuration = 600): Promise<void> => {
       return new Promise((resolve) => {
         const startJoints = { ...jointsRef.current };
         const startTime = Date.now();
 
+        // Calculate realistic duration based on motor constraints
+        const duration = calculateMotorDuration(startJoints, targetJoints, requestedDuration);
+
         const animate = () => {
-          const progress = Math.min((Date.now() - startTime) / duration, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+
+          // Use S-curve easing for realistic motor motion
+          const eased = sCurveEase(progress);
 
           const newJoints: Partial<JointState> = {};
           for (const joint of Object.keys(startJoints) as (keyof JointState)[]) {
