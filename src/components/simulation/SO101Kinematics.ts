@@ -111,14 +111,6 @@ const clamp = (value: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, value));
 };
 
-/**
- * Normalize angle to [-180, 180] range
- */
-const normalizeAngle = (angle: number): number => {
-  while (angle > 180) angle -= 360;
-  while (angle < -180) angle += 360;
-  return angle;
-};
 
 /**
  * Internal forward kinematics for IK solver
