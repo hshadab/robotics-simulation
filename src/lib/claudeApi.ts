@@ -627,42 +627,55 @@ function handlePickUpCommand(
 
       console.log('[handlePickUpCommand] Using IK-derived sequence');
 
-      // Check if approach and grasp angles are very different (close object case)
-      // If so, add an intermediate step to make the transition smoother
-      const shoulderDiff = Math.abs(approachIK.shoulder - graspIK.shoulder);
-      const elbowDiff = Math.abs(approachIK.elbow - graspIK.elbow);
-      const needsIntermediate = shoulderDiff > 80 || elbowDiff > 80;
+      // Always use IK-based intermediate waypoints to ensure safe descent path
+      // This prevents the arm from dipping below the table during interpolation
+      const mid1Y = Math.max(objY + 0.06, approachPos[1] * 0.6 + graspPos[1] * 0.4);
+      const mid2Y = Math.max(objY + 0.03, approachPos[1] * 0.3 + graspPos[1] * 0.7);
 
-      let sequence;
-      if (needsIntermediate) {
-        // Add intermediate step halfway between approach and grasp
-        const midStep = {
+      // Try to find IK solutions for intermediate heights
+      let mid1IK = calculateInverseKinematics(objX, mid1Y, objZ, defaultJoints);
+      let mid2IK = calculateInverseKinematics(objX, mid2Y, objZ, defaultJoints);
+
+      // If IK fails, use interpolated angles but verify they stay above table
+      if (!mid1IK) {
+        const blend = 0.4;
+        mid1IK = {
           base: graspIK.base,
-          shoulder: (approachIK.shoulder + graspIK.shoulder) / 2,
-          elbow: (approachIK.elbow + graspIK.elbow) / 2,
-          wrist: (approachIK.wrist + graspIK.wrist) / 2,
+          shoulder: approachIK.shoulder * (1-blend) + graspIK.shoulder * blend,
+          elbow: approachIK.elbow * (1-blend) + graspIK.elbow * blend,
+          wrist: approachIK.wrist * (1-blend) + graspIK.wrist * blend,
+          wristRoll: 0,
+          gripper: 100,
         };
-        console.log('[handlePickUpCommand] Adding intermediate step for smooth transition');
-
-        sequence = [
-          { gripper: 100 }, // Open gripper wide
-          { base: graspIK.base }, // First rotate base to face object
-          { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist }, // Approach (above object)
-          { base: midStep.base, shoulder: midStep.shoulder, elbow: midStep.elbow, wrist: midStep.wrist }, // Intermediate (halfway)
-          { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist }, // Lower to grasp
-          { gripper: 0 }, // Close gripper
-          { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist }, // Lift object
-        ];
-      } else {
-        sequence = [
-          { gripper: 100 }, // Open gripper wide
-          { base: graspIK.base }, // First rotate base to face object
-          { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist }, // Approach (above object)
-          { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist }, // Lower to grasp
-          { gripper: 0 }, // Close gripper
-          { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist }, // Lift object
-        ];
       }
+      if (!mid2IK) {
+        const blend = 0.7;
+        mid2IK = {
+          base: graspIK.base,
+          shoulder: approachIK.shoulder * (1-blend) + graspIK.shoulder * blend,
+          elbow: approachIK.elbow * (1-blend) + graspIK.elbow * blend,
+          wrist: approachIK.wrist * (1-blend) + graspIK.wrist * blend,
+          wristRoll: 0,
+          gripper: 100,
+        };
+      }
+
+      // Verify mid positions are above table
+      const mid1Pos = calculateSO101GripperPosition(mid1IK);
+      const mid2Pos = calculateSO101GripperPosition(mid2IK);
+      console.log('[handlePickUpCommand] Mid1 pos:', mid1Pos, 'Mid2 pos:', mid2Pos);
+
+      // Build sequence with 2 intermediate waypoints for smooth, safe descent
+      const sequence = [
+        { gripper: 100 },
+        { base: graspIK.base },
+        { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist },
+        { base: mid1IK.base, shoulder: mid1IK.shoulder, elbow: mid1IK.elbow, wrist: mid1IK.wrist },
+        { base: mid2IK.base, shoulder: mid2IK.shoulder, elbow: mid2IK.elbow, wrist: mid2IK.wrist },
+        { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist },
+        { gripper: 0 },
+        { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist },
+      ];
 
       console.log('[handlePickUpCommand] FULL SEQUENCE:', JSON.stringify(sequence, null, 2));
 
