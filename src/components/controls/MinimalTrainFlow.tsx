@@ -107,9 +107,17 @@ export const MinimalTrainFlow: React.FC<MinimalTrainFlowProps> = ({ onOpenDrawer
 
   // Handle chat send
   const handleChatSend = useCallback(() => {
+    console.log('[MinimalTrainFlow] handleChatSend called:', {
+      chatInput: chatInput.trim(),
+      isLLMLoading,
+      isRecording,
+      objectsInScene: objects.map(o => ({ name: o.name, type: o.type, position: o.position }))
+    });
+
     if (chatInput.trim() && !isLLMLoading) {
       // Start recording when sending a command
       if (!isRecording) {
+        console.log('[MinimalTrainFlow] Starting recording...');
         setIsRecording(true);
         recordedFramesRef.current = [];
         const startTime = Date.now();
@@ -122,10 +130,16 @@ export const MinimalTrainFlow: React.FC<MinimalTrainFlowProps> = ({ onOpenDrawer
         recorderRef.current = { intervalId: interval };
       }
 
+      console.log('[MinimalTrainFlow] Sending message to LLM:', chatInput.trim());
       sendMessage(chatInput.trim());
       setChatInput('');
+    } else {
+      console.log('[MinimalTrainFlow] Chat send blocked:', {
+        emptyInput: !chatInput.trim(),
+        isLoading: isLLMLoading
+      });
     }
-  }, [chatInput, isLLMLoading, isRecording, sendMessage, getJointPositions]);
+  }, [chatInput, isLLMLoading, isRecording, sendMessage, getJointPositions, objects]);
 
   // Auto-stop recording when robot stops moving after a command
   useEffect(() => {

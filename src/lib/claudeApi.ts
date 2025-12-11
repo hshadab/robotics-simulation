@@ -285,9 +285,23 @@ async function simulateClaudeResponse(
     };
   }
 
+  console.log('[simulateClaudeResponse] Routing to robot handler:', {
+    robotType,
+    message: lowerMessage,
+    objectCount: objects?.length || 0,
+    objects: objects?.map(o => ({ name: o.name, type: o.type, position: o.position }))
+  });
+
   switch (robotType) {
     case 'arm':
-      return simulateArmResponse(lowerMessage, currentState as JointState, objects);
+      const response = simulateArmResponse(lowerMessage, currentState as JointState, objects);
+      console.log('[simulateClaudeResponse] Arm response:', {
+        action: response.action,
+        description: response.description,
+        hasJoints: !!response.joints,
+        jointCount: Array.isArray(response.joints) ? response.joints.length : (response.joints ? 1 : 0)
+      });
+      return response;
     case 'wheeled':
       return simulateWheeledResponse(lowerMessage, currentState as WheeledRobotState);
     case 'drone':
