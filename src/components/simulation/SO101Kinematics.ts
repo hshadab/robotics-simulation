@@ -35,7 +35,8 @@ export const SO101_DIMS = {
 
 /**
  * Calculate the gripper tip position using forward kinematics
- * Based on SO-101 URDF joint chain with proper transform order
+ * Simplified planar arm model: base rotates around Y axis, arm moves in a vertical plane
+ * Convention: base=0 means arm extends along +Z axis, Y is up
  * @param joints - Joint state with base, shoulder, elbow, wrist angles in degrees
  * @returns [x, y, z] position of the gripper tip in meters
  */
@@ -43,53 +44,41 @@ export const calculateSO101GripperPosition = (joints: JointState): [number, numb
   const dims = SO101_DIMS;
 
   // Convert joint angles to radians
-  const shoulderPanRad = (joints.base * Math.PI) / 180;
-  const shoulderLiftRad = (joints.shoulder * Math.PI) / 180;
-  const elbowFlexRad = (joints.elbow * Math.PI) / 180;
-  const wristFlexRad = (joints.wrist * Math.PI) / 180;
+  const baseRad = (joints.base * Math.PI) / 180;
+  const shoulderRad = (joints.shoulder * Math.PI) / 180;
+  const elbowRad = (joints.elbow * Math.PI) / 180;
+  const wristRad = (joints.wrist * Math.PI) / 180;
 
-  // Start from base - shoulder pan joint is at offset and height
-  const shoulderHeight = dims.baseHeight + dims.link1Height;
+  // Shoulder pivot height (base + link1 + link2)
+  const shoulderHeight = dims.baseHeight + dims.link1Height + dims.link2Length;
 
-  // Shoulder position after shoulder_pan rotation
-  const shoulderPos = {
-    x: dims.shoulderOffset * Math.cos(-shoulderPanRad),
-    y: shoulderHeight,
-    z: dims.shoulderOffset * Math.sin(-shoulderPanRad),
-  };
+  // Compute arm extension in the local 2D plane (forward + up from shoulder)
+  // shoulder=0 means arm points up, positive rotates forward
+  const angle1 = shoulderRad;
+  const elbowLocal = dims.link3Length * Math.sin(angle1);
+  const elbowUp = dims.link3Length * Math.cos(angle1);
 
-  // Add shoulder bracket height and offset for shoulder_lift pivot
-  const shoulderLiftPos = {
-    x: shoulderPos.x - dims.shoulderLiftOffset * Math.cos(-shoulderPanRad),
-    y: shoulderPos.y + dims.link2Length,
-    z: shoulderPos.z - dims.shoulderLiftOffset * Math.sin(-shoulderPanRad),
-  };
+  // Elbow angle is cumulative with shoulder
+  const angle2 = angle1 + elbowRad;
+  const wristLocal = elbowLocal + dims.link4Length * Math.sin(angle2);
+  const wristUp = elbowUp + dims.link4Length * Math.cos(angle2);
 
-  // Upper arm: extends from shoulder_lift at angle
-  const angle1 = shoulderLiftRad;
-  const elbowPos = {
-    x: shoulderLiftPos.x + dims.link3Length * Math.sin(angle1) * Math.cos(-shoulderPanRad),
-    y: shoulderLiftPos.y + dims.link3Length * Math.cos(angle1),
-    z: shoulderLiftPos.z + dims.link3Length * Math.sin(angle1) * Math.sin(-shoulderPanRad),
-  };
+  // Wrist angle is cumulative
+  const angle3 = angle2 + wristRad;
+  const gripperLen = dims.link5Length + dims.gripperLength;
+  const gripperLocal = wristLocal + gripperLen * Math.sin(angle3);
+  const gripperUp = wristUp + gripperLen * Math.cos(angle3);
 
-  // Forearm: extends from elbow at cumulative angle
-  const angle2 = angle1 + elbowFlexRad;
-  const wristPos = {
-    x: elbowPos.x + dims.link4Length * Math.sin(angle2) * Math.cos(-shoulderPanRad),
-    y: elbowPos.y + dims.link4Length * Math.cos(angle2),
-    z: elbowPos.z + dims.link4Length * Math.sin(angle2) * Math.sin(-shoulderPanRad),
-  };
+  // Total forward distance from robot center (including shoulder offset)
+  const forwardDist = dims.shoulderOffset + gripperLocal;
 
-  // Gripper: extends from wrist at cumulative angle
-  const angle3 = angle2 + wristFlexRad;
-  const gripperPos = {
-    x: wristPos.x + (dims.link5Length + dims.gripperLength) * Math.sin(angle3) * Math.cos(-shoulderPanRad),
-    y: wristPos.y + (dims.link5Length + dims.gripperLength) * Math.cos(angle3),
-    z: wristPos.z + (dims.link5Length + dims.gripperLength) * Math.sin(angle3) * Math.sin(-shoulderPanRad),
-  };
+  // Convert to world coordinates using base rotation
+  // base=0 means arm extends along +Z axis, positive base rotates toward +X (left)
+  const x = forwardDist * Math.sin(baseRad);
+  const z = forwardDist * Math.cos(baseRad);
+  const y = shoulderHeight + gripperUp;
 
-  return [gripperPos.x, gripperPos.y, gripperPos.z];
+  return [x, y, z];
 };
 
 /**
@@ -298,44 +287,59 @@ export const calculateJointPositions = (
 } => {
   const dims = SO101_DIMS;
 
-  const shoulderPanRad = (joints.base * Math.PI) / 180;
-  const shoulderLiftRad = (joints.shoulder * Math.PI) / 180;
-  const elbowFlexRad = (joints.elbow * Math.PI) / 180;
-  const wristFlexRad = (joints.wrist * Math.PI) / 180;
+  const baseRad = (joints.base * Math.PI) / 180;
+  const shoulderRad = (joints.shoulder * Math.PI) / 180;
+  const elbowRad = (joints.elbow * Math.PI) / 180;
+  const wristRad = (joints.wrist * Math.PI) / 180;
 
-  // Base position
+  // Base position (center of robot base)
   const base: [number, number, number] = [0, dims.baseHeight, 0];
 
-  // Shoulder position
+  // Shoulder pivot height
   const shoulderHeight = dims.baseHeight + dims.link1Height + dims.link2Length;
+
+  // Shoulder position (at shoulder offset, rotated by base)
   const shoulder: [number, number, number] = [
-    dims.shoulderOffset * Math.cos(-shoulderPanRad),
+    dims.shoulderOffset * Math.sin(baseRad),
     shoulderHeight,
-    dims.shoulderOffset * Math.sin(-shoulderPanRad),
+    dims.shoulderOffset * Math.cos(baseRad),
   ];
 
-  // Elbow position
-  const angle1 = shoulderLiftRad;
+  // Compute arm positions in local 2D plane, then rotate by base
+  const angle1 = shoulderRad;
+  const elbowLocal = dims.link3Length * Math.sin(angle1);
+  const elbowUp = dims.link3Length * Math.cos(angle1);
+  const elbowForward = dims.shoulderOffset + elbowLocal;
+
   const elbow: [number, number, number] = [
-    shoulder[0] + dims.link3Length * Math.sin(angle1) * Math.cos(-shoulderPanRad),
-    shoulder[1] + dims.link3Length * Math.cos(angle1),
-    shoulder[2] + dims.link3Length * Math.sin(angle1) * Math.sin(-shoulderPanRad),
+    elbowForward * Math.sin(baseRad),
+    shoulderHeight + elbowUp,
+    elbowForward * Math.cos(baseRad),
   ];
 
   // Wrist position
-  const angle2 = angle1 + elbowFlexRad;
+  const angle2 = angle1 + elbowRad;
+  const wristLocal = elbowLocal + dims.link4Length * Math.sin(angle2);
+  const wristUp = elbowUp + dims.link4Length * Math.cos(angle2);
+  const wristForward = dims.shoulderOffset + wristLocal;
+
   const wrist: [number, number, number] = [
-    elbow[0] + dims.link4Length * Math.sin(angle2) * Math.cos(-shoulderPanRad),
-    elbow[1] + dims.link4Length * Math.cos(angle2),
-    elbow[2] + dims.link4Length * Math.sin(angle2) * Math.sin(-shoulderPanRad),
+    wristForward * Math.sin(baseRad),
+    shoulderHeight + wristUp,
+    wristForward * Math.cos(baseRad),
   ];
 
   // Gripper position
-  const angle3 = angle2 + wristFlexRad;
+  const angle3 = angle2 + wristRad;
+  const gripperLen = dims.link5Length + dims.gripperLength;
+  const gripperLocal = wristLocal + gripperLen * Math.sin(angle3);
+  const gripperUp = wristUp + gripperLen * Math.cos(angle3);
+  const gripperForward = dims.shoulderOffset + gripperLocal;
+
   const gripper: [number, number, number] = [
-    wrist[0] + (dims.link5Length + dims.gripperLength) * Math.sin(angle3) * Math.cos(-shoulderPanRad),
-    wrist[1] + (dims.link5Length + dims.gripperLength) * Math.cos(angle3),
-    wrist[2] + (dims.link5Length + dims.gripperLength) * Math.sin(angle3) * Math.sin(-shoulderPanRad),
+    gripperForward * Math.sin(baseRad),
+    shoulderHeight + gripperUp,
+    gripperForward * Math.cos(baseRad),
   ];
 
   return { base, shoulder, elbow, wrist, gripper };
