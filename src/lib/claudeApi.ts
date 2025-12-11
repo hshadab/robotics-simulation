@@ -383,12 +383,162 @@ function calculateBaseAngleForPosition(x: number, z: number): number {
   return Math.max(-110, Math.min(110, angleDeg));
 }
 
+// Helper function to handle pick-up commands
+function handlePickUpCommand(
+  message: string,
+  grabbableObjects: SimObject[],
+  heldObject: SimObject | undefined
+): ClaudeResponse {
+  // If we're already holding something
+  if (heldObject) {
+    return {
+      action: 'explain',
+      description: `I'm already holding "${heldObject.name || heldObject.id}". Say "drop" or "place" to release it first.`,
+    };
+  }
+
+  // Find an object to pick up
+  if (grabbableObjects.length === 0) {
+    console.log('[handlePickUpCommand] No grabbable objects found');
+    return {
+      action: 'explain',
+      description: "I don't see any objects to pick up. Try adding an object using the Object Library first.",
+    };
+  }
+
+  console.log('[handlePickUpCommand] Grabbable objects:', grabbableObjects.map(o => ({
+    name: o.name,
+    type: o.type,
+    id: o.id,
+    position: o.position,
+    isGrabbable: o.isGrabbable
+  })));
+
+  // Find closest object or one matching the name/color/type
+  let targetObject = grabbableObjects[0];
+  let matchFound = false;
+
+  // Shape/type synonyms: "cube" = "block", "ball" = "sphere", etc.
+  const typeAliases: Record<string, string[]> = {
+    cube: ['cube', 'block', 'box', 'square'],
+    ball: ['ball', 'sphere', 'round'],
+    cylinder: ['cylinder', 'can', 'bottle', 'cup', 'tube'],
+  };
+
+  for (const obj of grabbableObjects) {
+    const name = (obj.name || '').toLowerCase();
+    const objType = (obj.type || '').toLowerCase();
+    const color = (obj.color || '').toLowerCase();
+
+    // Check for name match, partial name match, type match, or color match
+    const words = name.split(/\s+/);
+    const colorWords = ['red', 'blue', 'green', 'yellow', 'orange', 'white', 'black', 'pink', 'purple'];
+    const messageColor = colorWords.find(c => message.includes(c));
+
+    // Check if message contains any alias for the object's type
+    const typeMatches = typeAliases[objType]?.some(alias => message.includes(alias)) || message.includes(objType);
+
+    if (message.includes(name) ||
+        message.includes(obj.id) ||
+        words.some(word => word.length > 2 && message.includes(word)) ||
+        typeMatches ||
+        (messageColor && (name.includes(messageColor) || color.includes(messageColor)))) {
+      targetObject = obj;
+      matchFound = true;
+      console.log('[handlePickUpCommand] Matched object:', targetObject.name, 'via',
+        message.includes(name) ? 'full name' :
+        words.some(word => word.length > 2 && message.includes(word)) ? 'word match' :
+        typeMatches ? 'type match' : 'color match');
+      break;
+    }
+  }
+
+  if (!matchFound) {
+    console.log('[handlePickUpCommand] No specific match found, using first object:', targetObject.name);
+  }
+
+  const [objX, objY, objZ] = targetObject.position;
+  const baseAngle = calculateBaseAngleForPosition(objX, objZ);
+  const objName = targetObject.name || targetObject.id;
+
+  // Calculate horizontal distance from robot base to object
+  const distance = Math.sqrt(objX * objX + objZ * objZ);
+
+  console.log(`[handlePickUpCommand] Pick up "${objName}": pos=[${objX.toFixed(3)}, ${objY.toFixed(3)}, ${objZ.toFixed(3)}], distance=${distance.toFixed(3)}m, baseAngle=${baseAngle.toFixed(1)}°`);
+
+  // SO-101 arm segment lengths (approximate):
+  // - Upper arm (shoulder to elbow): ~10cm
+  // - Forearm (elbow to wrist): ~10cm
+  // - Total reach: ~20cm
+
+  // Calculate joint angles based on distance and height
+  let approachShoulder: number;
+  let lowerShoulder: number;
+  let lowerElbow: number;
+
+  if (distance < 0.12) {
+    // Very close - need to reach down more vertically
+    approachShoulder = 20;
+    lowerShoulder = -40;
+    lowerElbow = -110;
+  } else if (distance < 0.18) {
+    // Medium distance - balanced reach
+    approachShoulder = 35;
+    lowerShoulder = -25;
+    lowerElbow = -95;
+  } else {
+    // Far - extend more horizontally
+    approachShoulder = 50;
+    lowerShoulder = -10;
+    lowerElbow = -75;
+  }
+
+  // Adjust for object height (Y)
+  if (objY > 0.08) {
+    lowerShoulder += 15;
+    lowerElbow += 20;
+  }
+
+  console.log(`[handlePickUpCommand] Calculated joints: approach=${approachShoulder}°, lower=${lowerShoulder}°, elbow=${lowerElbow}°`);
+
+  return {
+    action: 'sequence',
+    joints: [
+      { gripper: 100 }, // Open gripper wide
+      { base: baseAngle }, // Rotate to face object
+      { shoulder: approachShoulder, elbow: -30 }, // Raise and extend toward object
+      { shoulder: lowerShoulder, elbow: lowerElbow }, // Lower to grasp height
+      { gripper: 0 }, // Close gripper
+      { shoulder: 30, elbow: -45 }, // Lift object up
+    ],
+    description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] (distance: ${(distance * 100).toFixed(0)}cm)`,
+    code: `// Pick up "${objName}"
+await openGripper();
+await moveJoint('base', ${baseAngle.toFixed(0)});
+await moveJoint('shoulder', ${approachShoulder});
+await moveJoint('elbow', -30);
+await moveJoint('shoulder', ${lowerShoulder});
+await moveJoint('elbow', ${lowerElbow});
+await closeGripper();
+await moveJoint('shoulder', 30);`,
+  };
+}
+
 function simulateArmResponse(message: string, state: JointState, objects?: SimObject[]): ClaudeResponse {
+  console.log('[simulateArmResponse] Processing message:', message);
   const amount = parseAmount(message);
 
   // Find grabbable objects
   const grabbableObjects = objects?.filter(o => o.isGrabbable && !o.isGrabbed) || [];
   const heldObject = objects?.find(o => o.isGrabbed);
+
+  // IMPORTANT: Check compound commands first (like "pick up") before simple ones (like "up")
+
+  // Pick up / grab objects - check BEFORE checking "up"
+  if (message.includes('pick') || message.includes('grab')) {
+    console.log('[simulateArmResponse] Detected pick/grab command');
+    return handlePickUpCommand(message, grabbableObjects, heldObject);
+  }
 
   // Movement commands - base rotation
   if (message.includes('left') && !message.includes('elbow')) {
@@ -538,117 +688,6 @@ for (let i = 0; i < 2; i++) {
       joints: { base: 0, shoulder: 0, elbow: 0, wrist: 0, wristRoll: 0, gripper: 50 },
       description: 'Moving to home position',
       code: `await goHome();`,
-    };
-  }
-
-  if (message.includes('pick') || message.includes('grab')) {
-    // If we're already holding something
-    if (heldObject) {
-      return {
-        action: 'explain',
-        description: `I'm already holding "${heldObject.name || heldObject.id}". Say "drop" or "place" to release it first.`,
-      };
-    }
-
-    // Find an object to pick up
-    if (grabbableObjects.length === 0) {
-      console.log('[simulateArmResponse] No grabbable objects found. Objects:', objects);
-      return {
-        action: 'explain',
-        description: "I don't see any objects to pick up. Try adding an object using the Object Library first.",
-      };
-    }
-
-    console.log('[simulateArmResponse] Grabbable objects:', grabbableObjects.map(o => ({ name: o.name, id: o.id, position: o.position, isGrabbable: o.isGrabbable })));
-
-    // Find closest object or one matching the name/color
-    let targetObject = grabbableObjects[0];
-    for (const obj of grabbableObjects) {
-      const name = (obj.name || '').toLowerCase();
-      const color = (obj.color || '').toLowerCase();
-      // Check for name match, partial name match, or color match
-      const words = name.split(/\s+/);
-      const colorWords = ['red', 'blue', 'green', 'yellow', 'orange', 'white', 'black', 'pink', 'purple'];
-      const messageColor = colorWords.find(c => message.includes(c));
-
-      if (message.includes(name) ||
-          message.includes(obj.id) ||
-          words.some(word => message.includes(word)) ||
-          (messageColor && (name.includes(messageColor) || color.includes(messageColor)))) {
-        targetObject = obj;
-        console.log('[simulateArmResponse] Matched object:', targetObject.name);
-        break;
-      }
-    }
-
-    const [objX, objY, objZ] = targetObject.position;
-    const baseAngle = calculateBaseAngleForPosition(objX, objZ);
-    const objName = targetObject.name || targetObject.id;
-
-    // Calculate horizontal distance from robot base to object
-    const distance = Math.sqrt(objX * objX + objZ * objZ);
-
-    console.log(`[simulateArmResponse] Pick up "${objName}": pos=[${objX.toFixed(3)}, ${objY.toFixed(3)}, ${objZ.toFixed(3)}], distance=${distance.toFixed(3)}m, baseAngle=${baseAngle.toFixed(1)}°`);
-
-    // SO-101 arm segment lengths (approximate):
-    // - Upper arm (shoulder to elbow): ~10cm
-    // - Forearm (elbow to wrist): ~10cm
-    // - Total reach: ~20cm
-
-    // Calculate joint angles based on distance and height
-    // For objects close (< 15cm): more bent elbow
-    // For objects far (> 15cm): more extended arm
-
-    let approachShoulder: number;
-    let lowerShoulder: number;
-    let lowerElbow: number;
-
-    if (distance < 0.12) {
-      // Very close - need to reach down more vertically
-      approachShoulder = 20;
-      lowerShoulder = -40;
-      lowerElbow = -110;
-    } else if (distance < 0.18) {
-      // Medium distance - balanced reach
-      approachShoulder = 35;
-      lowerShoulder = -25;
-      lowerElbow = -95;
-    } else {
-      // Far - extend more horizontally
-      approachShoulder = 50;
-      lowerShoulder = -10;
-      lowerElbow = -75;
-    }
-
-    // Adjust for object height (Y)
-    // Objects higher up need less lowering
-    if (objY > 0.08) {
-      lowerShoulder += 15;
-      lowerElbow += 20;
-    }
-
-    console.log(`[simulateArmResponse] Calculated joints: approach=${approachShoulder}°, lower=${lowerShoulder}°, elbow=${lowerElbow}°`);
-
-    return {
-      action: 'sequence',
-      joints: [
-        { gripper: 100 }, // Open gripper wide
-        { base: baseAngle }, // Rotate to face object
-        { shoulder: approachShoulder, elbow: -30 }, // Raise and extend toward object
-        { shoulder: lowerShoulder, elbow: lowerElbow }, // Lower to grasp height
-        { gripper: 0 }, // Close gripper
-        { shoulder: 30, elbow: -45 }, // Lift object up
-      ],
-      description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] (distance: ${(distance * 100).toFixed(0)}cm)`,
-      code: `// Pick up "${objName}"
-await openGripper();
-await moveJoint('base', ${baseAngle.toFixed(0)});
-await moveJoint('shoulder', ${approachShoulder});
-await moveJoint('elbow', -30);
-await moveJoint('shoulder', ${lowerShoulder});
-await moveJoint('elbow', ${lowerElbow});
-await closeGripper();
-await moveJoint('shoulder', 30);`,
     };
   }
 

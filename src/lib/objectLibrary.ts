@@ -401,6 +401,7 @@ export function createSimObjectFromTemplate(
 ): SimObject {
   return {
     id: `${template.id}-${Date.now()}`,
+    name: template.name,
     type: template.type,
     position,
     rotation,
