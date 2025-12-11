@@ -545,42 +545,70 @@ function handlePickUpCommand(
       const liftY = Math.max(objY + 0.15, 0.18);
       let liftIK = calculateInverseKinematics(objX, liftY, objZ, defaultJoints);
 
-      // If approach IK failed, use a safe "hover" position that's always above the table
-      // For close objects (extreme grasp angles), we need a safe approach rather than deriving from grasp
+      // If approach IK failed, we need a different strategy for close objects
+      // These close objects require extreme grasp angles - we can't smoothly derive approach from them
+      // Instead, use a "hover above" approach with the arm positioned to descend straight down
       if (!approachIK) {
-        // Use a safe raised position with arm extended toward the object direction
-        // The key is to stay above ground while being in the general direction of the object
+        // For close objects, use a raised position that's above the object
+        // Key: keep gripper pointing downward and positioned roughly over the object
+        // Use positive angles that keep the arm extended forward/down
         approachIK = {
-          base: graspIK.base,
-          shoulder: 20,   // Slight forward tilt
-          elbow: 60,      // Extended downward
-          wrist: 30,      // Gripper angled down
+          base: graspIK.base,  // Same rotation to face the object
+          shoulder: 45,        // Arm tilted forward
+          elbow: 45,           // Elbow bent down
+          wrist: 0,            // Wrist neutral
           wristRoll: 0,
           gripper: 100,
         };
 
-        // Verify this is above ground and adjust if needed
+        // Check the approach position
         let testPos = calculateSO101GripperPosition(approachIK);
-        if (testPos[1] < 0.05) {
-          // Still too low, use more upright position
+        console.log('[handlePickUpCommand] Initial approach pos:', testPos);
+
+        // Make sure approach is above the object and in the right direction
+        // The X and Z should have the same SIGN as the object position
+        const approachInRightDirection =
+          (Math.sign(testPos[0]) === Math.sign(objX) || Math.abs(objX) < 0.02) &&
+          (Math.sign(testPos[2]) === Math.sign(objZ) || Math.abs(objZ) < 0.02);
+
+        if (!approachInRightDirection || testPos[1] < objY + 0.05) {
+          // Try a more upright position
           approachIK.shoulder = 30;
-          approachIK.elbow = 40;
+          approachIK.elbow = 60;
           approachIK.wrist = 20;
+          testPos = calculateSO101GripperPosition(approachIK);
+          console.log('[handlePickUpCommand] Adjusted approach pos:', testPos);
         }
-        console.log('[handlePickUpCommand] Using safe hover approach');
+
+        console.log('[handlePickUpCommand] Using hover approach for close object');
       }
 
-      // If lift IK failed, use safe raised position
+      // If lift IK failed, use a safe raised position similar to approach
       if (!liftIK) {
+        // Use same strategy as approach - a raised position above the object
         liftIK = {
           base: graspIK.base,
-          shoulder: 30,
-          elbow: 50,
-          wrist: 20,
+          shoulder: 35,   // More upright than approach
+          elbow: 55,
+          wrist: 10,
           wristRoll: 0,
           gripper: 0,
         };
-        console.log('[handlePickUpCommand] Using safe hover lift');
+
+        // Verify lift is above grasp
+        let liftTestPos = calculateSO101GripperPosition(liftIK);
+        console.log('[handlePickUpCommand] Initial lift pos:', liftTestPos);
+
+        if (liftTestPos[1] < graspPos[1] + 0.05) {
+          // Try even more upright
+          liftIK.shoulder = 25;
+          liftIK.elbow = 65;
+          liftIK.wrist = 15;
+          liftTestPos = calculateSO101GripperPosition(liftIK);
+          console.log('[handlePickUpCommand] Adjusted lift pos:', liftTestPos);
+        }
+
+        console.log('[handlePickUpCommand] Using hover lift for close object');
       }
 
       // Verify positions
@@ -599,14 +627,42 @@ function handlePickUpCommand(
 
       console.log('[handlePickUpCommand] Using IK-derived sequence');
 
-      const sequence = [
-        { gripper: 100 }, // Open gripper wide
-        { base: graspIK.base }, // First rotate base to face object
-        { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist }, // Approach (above object)
-        { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist }, // Lower to grasp
-        { gripper: 0 }, // Close gripper
-        { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist }, // Lift object
-      ];
+      // Check if approach and grasp angles are very different (close object case)
+      // If so, add an intermediate step to make the transition smoother
+      const shoulderDiff = Math.abs(approachIK.shoulder - graspIK.shoulder);
+      const elbowDiff = Math.abs(approachIK.elbow - graspIK.elbow);
+      const needsIntermediate = shoulderDiff > 80 || elbowDiff > 80;
+
+      let sequence;
+      if (needsIntermediate) {
+        // Add intermediate step halfway between approach and grasp
+        const midStep = {
+          base: graspIK.base,
+          shoulder: (approachIK.shoulder + graspIK.shoulder) / 2,
+          elbow: (approachIK.elbow + graspIK.elbow) / 2,
+          wrist: (approachIK.wrist + graspIK.wrist) / 2,
+        };
+        console.log('[handlePickUpCommand] Adding intermediate step for smooth transition');
+
+        sequence = [
+          { gripper: 100 }, // Open gripper wide
+          { base: graspIK.base }, // First rotate base to face object
+          { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist }, // Approach (above object)
+          { base: midStep.base, shoulder: midStep.shoulder, elbow: midStep.elbow, wrist: midStep.wrist }, // Intermediate (halfway)
+          { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist }, // Lower to grasp
+          { gripper: 0 }, // Close gripper
+          { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist }, // Lift object
+        ];
+      } else {
+        sequence = [
+          { gripper: 100 }, // Open gripper wide
+          { base: graspIK.base }, // First rotate base to face object
+          { base: approachIK.base, shoulder: approachIK.shoulder, elbow: approachIK.elbow, wrist: approachIK.wrist }, // Approach (above object)
+          { base: graspIK.base, shoulder: graspIK.shoulder, elbow: graspIK.elbow, wrist: graspIK.wrist }, // Lower to grasp
+          { gripper: 0 }, // Close gripper
+          { base: liftIK.base, shoulder: liftIK.shoulder, elbow: liftIK.elbow, wrist: liftIK.wrist }, // Lift object
+        ];
+      }
 
       console.log('[handlePickUpCommand] FULL SEQUENCE:', JSON.stringify(sequence, null, 2));
 
