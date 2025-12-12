@@ -74,7 +74,15 @@ export const useAuthStore = create<AuthState>()(
       initialize: async () => {
         if (!isSupabaseConfigured) {
           // Development mode without Supabase
-          set({ isLoading: false });
+          // Don't override isAuthenticated if it was persisted (allows mock login to persist)
+          // But if no user data exists, ensure we're logged out
+          const currentState = get();
+          if (currentState.isAuthenticated && !currentState.user) {
+            // Stale auth state - clear it
+            set({ isAuthenticated: false, isLoading: false });
+          } else {
+            set({ isLoading: false });
+          }
           return;
         }
 
@@ -189,26 +197,39 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        set({ isLoading: true });
+        log.info('Logout initiated');
+
+        // FIRST: Clear persisted state from localStorage to prevent rehydration race
+        try {
+          localStorage.removeItem('robosim-auth');
+          log.info('Cleared localStorage');
+        } catch (e) {
+          log.error('Failed to clear localStorage', e);
+        }
+
+        // Clear local state immediately (before any async operations)
+        set({
+          user: null,
+          session: null,
+          profile: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+        log.info('Cleared local state');
+
+        // Then attempt Supabase signOut (non-blocking for local logout)
         try {
           if (isSupabaseConfigured) {
             await supabaseSignOut();
+            log.info('Supabase signOut successful');
           }
-          set({
-            user: null,
-            session: null,
-            profile: null,
-            isAuthenticated: false,
-            isLoading: false,
-          });
-          // Clear persisted state
-          localStorage.removeItem('robosim-auth');
         } catch (error) {
-          set({
-            isLoading: false,
-            error: error instanceof Error ? error.message : 'Logout failed',
-          });
+          // Log the error but local state is already cleared
+          log.error('Supabase signOut error (local logout already complete)', error);
         }
+
+        log.info('Logout completed');
       },
 
       // Mock login for development without Supabase
@@ -302,8 +323,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'robosim-auth',
       partialize: (state) => ({
-        // Only persist minimal state - real auth state comes from Supabase
+        // Persist auth state for mock users (real auth state comes from Supabase on init)
         isAuthenticated: state.isAuthenticated,
+        user: state.user,
+        profile: state.profile,
       }),
     }
   )

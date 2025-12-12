@@ -599,7 +599,7 @@ function handlePickUpCommand(
     const graspError = Math.sqrt((graspPos[0]-objX)**2 + (graspPos[1]-graspHeight)**2 + (graspPos[2]-objZ)**2);
     console.log('[handlePickUpCommand] Grasp position:', graspPos, 'error:', (graspError * 1000).toFixed(1), 'mm');
 
-    if (graspError < 0.03) { // Within 3cm
+    if (graspError < 0.10) { // Within 10cm (matches GRAB_RADIUS for safe-search fallback)
       // For approach and lift, we need positions that are:
       // 1. Directly above the grasp position (same X, Z but higher Y)
       // 2. Gripper pointing downward to avoid batting the object
@@ -872,39 +872,52 @@ await moveJoints({ base: ${liftIK.base.toFixed(1)}, shoulder: ${liftIK.shoulder.
   // Fallback: IK failed or grasp error too large
   console.log('[handlePickUpCommand] IK failed or error too large, using search-based fallback');
 
-  // Search for best joints that reach the object
-  let bestGrasp = { shoulder: 0, elbow: 0, wrist: 0, error: Infinity };
+  // Search for best joints that reach the object WITH safe approach path
+  let bestGrasp = { shoulder: 0, elbow: 0, wrist: 0, error: Infinity, hasSafePath: false };
+  const fallbackApproach: JointState = { base: baseAngle, shoulder: 45, elbow: 45, wrist: 0, wristRoll: 0, gripper: 100 };
+
   for (let shoulder = -100; shoulder <= 100; shoulder += 10) {
     for (let elbow = -97; elbow <= 97; elbow += 10) {
       for (let wrist = -95; wrist <= 95; wrist += 15) {
-        const testJoints = { base: baseAngle, shoulder, elbow, wrist, wristRoll: 0, gripper: 100 };
+        const testJoints: JointState = { base: baseAngle, shoulder, elbow, wrist, wristRoll: 0, gripper: 100 };
         const pos = calculateSO101GripperPosition(testJoints);
         const error = Math.sqrt((pos[0]-objX)**2 + (pos[1]-objY)**2 + (pos[2]-objZ)**2);
-        if (error < bestGrasp.error) {
-          bestGrasp = { shoulder, elbow, wrist, error };
+
+        // Prioritize grasps with safe approach paths
+        const hasSafePath = checkApproachPath(testJoints, fallbackApproach);
+
+        // Prefer safe paths over better precision without safe paths
+        if ((hasSafePath && !bestGrasp.hasSafePath) ||
+            (hasSafePath === bestGrasp.hasSafePath && error < bestGrasp.error)) {
+          bestGrasp = { shoulder, elbow, wrist, error, hasSafePath };
         }
       }
     }
   }
 
-  // Fine-tune
-  for (let ds = -9; ds <= 9; ds++) {
-    for (let de = -9; de <= 9; de++) {
-      for (let dw = -14; dw <= 14; dw++) {
-        const s = Math.max(-100, Math.min(100, bestGrasp.shoulder + ds));
-        const e = Math.max(-97, Math.min(97, bestGrasp.elbow + de));
-        const w = Math.max(-95, Math.min(95, bestGrasp.wrist + dw));
-        const testJoints = { base: baseAngle, shoulder: s, elbow: e, wrist: w, wristRoll: 0, gripper: 100 };
-        const pos = calculateSO101GripperPosition(testJoints);
-        const error = Math.sqrt((pos[0]-objX)**2 + (pos[1]-objY)**2 + (pos[2]-objZ)**2);
-        if (error < bestGrasp.error) {
-          bestGrasp = { shoulder: s, elbow: e, wrist: w, error };
+  // Fine-tune (only if we have a reasonable starting point)
+  if (bestGrasp.error < 0.15) {
+    for (let ds = -9; ds <= 9; ds++) {
+      for (let de = -9; de <= 9; de++) {
+        for (let dw = -14; dw <= 14; dw++) {
+          const s = Math.max(-100, Math.min(100, bestGrasp.shoulder + ds));
+          const e = Math.max(-97, Math.min(97, bestGrasp.elbow + de));
+          const w = Math.max(-95, Math.min(95, bestGrasp.wrist + dw));
+          const testJoints: JointState = { base: baseAngle, shoulder: s, elbow: e, wrist: w, wristRoll: 0, gripper: 100 };
+          const pos = calculateSO101GripperPosition(testJoints);
+          const error = Math.sqrt((pos[0]-objX)**2 + (pos[1]-objY)**2 + (pos[2]-objZ)**2);
+          const hasSafePath = checkApproachPath(testJoints, fallbackApproach);
+
+          if ((hasSafePath && !bestGrasp.hasSafePath) ||
+              (hasSafePath === bestGrasp.hasSafePath && error < bestGrasp.error)) {
+            bestGrasp = { shoulder: s, elbow: e, wrist: w, error, hasSafePath };
+          }
         }
       }
     }
   }
 
-  console.log('[handlePickUpCommand] Best grasp found:', bestGrasp);
+  console.log('[handlePickUpCommand] Best grasp found:', bestGrasp, 'safe path:', bestGrasp.hasSafePath);
 
   // Derive approach and lift from grasp by adjusting angles
   // Adding to shoulder/elbow raises the arm while keeping it pointed in same direction
@@ -915,17 +928,39 @@ await moveJoints({ base: ${liftIK.base.toFixed(1)}, shoulder: ${liftIK.shoulder.
   const liftElbow = Math.min(bestGrasp.elbow + 20, 97);
   const liftWrist = Math.min(bestGrasp.wrist + 15, 95);
 
+  // Check if we need intermediate waypoints for large angle changes
+  const shoulderDiff = Math.abs(approachShoulder - bestGrasp.shoulder);
+  const elbowDiff = Math.abs(approachElbow - bestGrasp.elbow);
+  const maxAngleDiff = Math.max(shoulderDiff, elbowDiff);
+
+  const sequence: Partial<JointState>[] = [
+    { gripper: 100 },
+    { base: baseAngle }, // First rotate to face object
+    { base: baseAngle, shoulder: approachShoulder, elbow: approachElbow, wrist: approachWrist },
+  ];
+
+  // Add intermediate waypoints for large angle changes
+  if (maxAngleDiff > 40) {
+    const numSteps = Math.min(5, Math.ceil(maxAngleDiff / 20));
+    for (let i = 1; i <= numSteps; i++) {
+      const t = i / (numSteps + 1);
+      sequence.push({
+        base: baseAngle,
+        shoulder: approachShoulder * (1 - t) + bestGrasp.shoulder * t,
+        elbow: approachElbow * (1 - t) + bestGrasp.elbow * t,
+        wrist: approachWrist * (1 - t) + bestGrasp.wrist * t,
+      });
+    }
+  }
+
+  sequence.push({ base: baseAngle, shoulder: bestGrasp.shoulder, elbow: bestGrasp.elbow, wrist: bestGrasp.wrist });
+  sequence.push({ gripper: 0 });
+  sequence.push({ base: baseAngle, shoulder: liftShoulder, elbow: liftElbow, wrist: liftWrist });
+
   return {
     action: 'sequence',
-    joints: [
-      { gripper: 100 },
-      { base: baseAngle }, // First rotate to face object
-      { base: baseAngle, shoulder: approachShoulder, elbow: approachElbow, wrist: approachWrist },
-      { base: baseAngle, shoulder: bestGrasp.shoulder, elbow: bestGrasp.elbow, wrist: bestGrasp.wrist },
-      { gripper: 0 },
-      { base: baseAngle, shoulder: liftShoulder, elbow: liftElbow, wrist: liftWrist },
-    ],
-    description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] (search mode, ${(bestGrasp.error * 1000).toFixed(0)}mm error)`,
+    joints: sequence,
+    description: `Picking up "${objName}" at [${objX.toFixed(2)}, ${objY.toFixed(2)}, ${objZ.toFixed(2)}] (search mode, ${(bestGrasp.error * 1000).toFixed(0)}mm error${bestGrasp.hasSafePath ? ', safe path' : ''})`,
     code: `// Pick up "${objName}" using grid search
 await openGripper();
 await moveJoints({ base: ${baseAngle.toFixed(1)}, shoulder: ${approachShoulder}, elbow: ${approachElbow}, wrist: ${approachWrist} }); // Approach
