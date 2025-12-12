@@ -628,71 +628,58 @@ function handlePickUpCommand(
         liftIK = null;
       }
 
-      // If approach IK failed or was rejected, derive from grasp angles
-      // Key insight: to move UP from grasp, we typically DECREASE shoulder angle (more upright)
-      // and may need to adjust elbow to compensate
+      // If approach IK failed or was rejected, use a FIXED safe hover position
+      // This ensures the arm starts from a known-good position above the workspace
       if (!approachIK) {
-        // Derive approach from grasp by moving arm to a higher position
-        // Decrease shoulder (more negative = arm higher) and adjust elbow
-        const approachShoulder = Math.max(graspIK.shoulder - 20, -30); // Raise arm but not too far back
-        const approachElbow = Math.min(graspIK.elbow + 10, 95); // Bend elbow more
-        const approachWrist = graspIK.wrist;
-
+        // Use the standard hover approach position - arm extended forward and up
+        // These angles are known to work safely for the SO-101 arm
         approachIK = {
-          base: graspIK.base,
-          shoulder: approachShoulder,
-          elbow: approachElbow,
-          wrist: approachWrist,
+          base: graspIK.base,  // Face the object
+          shoulder: 45,        // Arm tilted forward (positive = forward/down)
+          elbow: 45,           // Elbow bent
+          wrist: 0,            // Wrist neutral
           wristRoll: 0,
           gripper: 100,
         };
 
-        // Check the approach position
         let testPos = calculateSO101GripperPosition(approachIK);
-        console.log('[handlePickUpCommand] Derived approach pos:', testPos, 'from grasp shoulder:', graspIK.shoulder);
+        console.log('[handlePickUpCommand] Using safe hover approach pos:', testPos);
 
-        // Verify approach is above grasp
-        const graspTestPos = calculateSO101GripperPosition(graspIK);
-        if (testPos[1] <= graspTestPos[1]) {
-          // If still not above, try adjusting more
-          approachIK.shoulder = Math.max(graspIK.shoulder - 30, -40);
-          approachIK.elbow = Math.min(graspIK.elbow + 15, 97);
+        // If hover position is too low, raise it
+        if (testPos[1] < graspPos[1] + 0.05) {
+          approachIK.shoulder = 30;
+          approachIK.elbow = 60;
           testPos = calculateSO101GripperPosition(approachIK);
-          console.log('[handlePickUpCommand] Adjusted approach pos:', testPos);
+          console.log('[handlePickUpCommand] Adjusted hover approach pos:', testPos);
         }
 
-        console.log('[handlePickUpCommand] Using derived approach from grasp angles');
+        console.log('[handlePickUpCommand] Using safe hover approach');
       }
 
-      // If lift IK failed or was rejected, derive from grasp angles (higher than approach)
+      // If lift IK failed or was rejected, use a safe lift position
       if (!liftIK) {
-        // Derive lift from grasp by moving arm even higher than approach
-        const liftShoulder = Math.max(graspIK.shoulder - 35, -50); // Raise arm more than approach
-        const liftElbow = Math.min(graspIK.elbow + 15, 97);
-        const liftWrist = graspIK.wrist;
-
+        // Use a slightly higher version of the hover position for lift
         liftIK = {
           base: graspIK.base,
-          shoulder: liftShoulder,
-          elbow: liftElbow,
-          wrist: liftWrist,
+          shoulder: 35,        // More upright than approach
+          elbow: 55,
+          wrist: 0,
           wristRoll: 0,
-          gripper: 0,
+          gripper: 0,          // Gripper closed (holding object)
         };
 
-        // Verify lift is above grasp
         let liftTestPos = calculateSO101GripperPosition(liftIK);
-        console.log('[handlePickUpCommand] Derived lift pos:', liftTestPos, 'from grasp shoulder:', graspIK.shoulder);
+        console.log('[handlePickUpCommand] Using safe hover lift pos:', liftTestPos);
 
+        // If still not high enough, adjust
         if (liftTestPos[1] < graspPos[1] + 0.05) {
-          // If still not high enough, adjust more
-          liftIK.shoulder = Math.max(graspIK.shoulder - 45, -60);
-          liftIK.elbow = Math.min(graspIK.elbow + 20, 97);
+          liftIK.shoulder = 25;
+          liftIK.elbow = 65;
           liftTestPos = calculateSO101GripperPosition(liftIK);
-          console.log('[handlePickUpCommand] Adjusted lift pos:', liftTestPos);
+          console.log('[handlePickUpCommand] Adjusted hover lift pos:', liftTestPos);
         }
 
-        console.log('[handlePickUpCommand] Using derived lift from grasp angles');
+        console.log('[handlePickUpCommand] Using safe hover lift');
       }
 
       // Verify positions
