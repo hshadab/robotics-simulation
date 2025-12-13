@@ -15,7 +15,7 @@ export type { HandLandmarkerResult, PoseLandmarkerResult, NormalizedLandmark };
 
 export interface HandTrackingResult {
   landmarks: NormalizedLandmark[][];
-  handedness: Array<{ index: number; score: number; categoryName: string }>;
+  handedness: { index: number; score: number; categoryName: string }[];
   worldLandmarks: NormalizedLandmark[][];
 }
 

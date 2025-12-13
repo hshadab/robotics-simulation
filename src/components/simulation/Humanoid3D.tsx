@@ -6,7 +6,7 @@
 
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { HumanoidState } from '../../types';
 import { HUMANOID_DIMENSIONS } from './defaults';
 

@@ -17,8 +17,8 @@ const DEFAULT_CONFIG: PlotConfig = {
 // Ring buffer for efficient data storage
 class RingBuffer<T> {
   private buffer: T[];
-  private head: number = 0;
-  private size: number = 0;
+  private head = 0;
+  private size = 0;
   private capacity: number;
 
   constructor(capacity: number) {

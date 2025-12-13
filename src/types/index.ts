@@ -309,7 +309,7 @@ export interface SensorConfig {
   };
   irSensors: {
     enabled: boolean;
-    positions: Array<{ id: string; offset: [number, number, number] }>;
+    positions: { id: string; offset: [number, number, number] }[];
   };
 }
 

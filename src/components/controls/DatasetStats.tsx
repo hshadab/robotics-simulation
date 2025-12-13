@@ -18,8 +18,7 @@ import {
   FileText,
 } from 'lucide-react';
 import type { Episode } from '../../lib/datasetExporter';
-import type { EpisodeQualityMetrics } from '../../lib/teleoperationGuide';
-import { getQualityLevel, getQualityColor } from '../../lib/teleoperationGuide';
+import { getQualityLevel, getQualityColor, type EpisodeQualityMetrics } from '../../lib/teleoperationGuide';
 
 interface DatasetStatsProps {
   episodes: Episode[];

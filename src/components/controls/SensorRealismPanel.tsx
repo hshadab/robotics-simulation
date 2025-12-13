@@ -14,11 +14,11 @@ import {
   NOISE_PROFILES,
 } from '../../lib/sensorNoise';
 
-const REALISM_OPTIONS: Array<{
+const REALISM_OPTIONS: {
   value: NoiseSettings['realism'];
   label: string;
   description: string;
-}> = [
+}[] = [
   {
     value: 'none',
     label: 'None',

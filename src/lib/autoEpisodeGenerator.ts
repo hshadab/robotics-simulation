@@ -331,12 +331,12 @@ export function estimateEpisodeCount(config: GenerationConfig): {
 /**
  * Get available template options
  */
-export function getAvailableTemplates(): Array<{
+export function getAvailableTemplates(): {
   id: string;
   name: string;
   description: string;
   category: string;
-}> {
+}[] {
   return PARAMETERIZED_TEMPLATES.map((t) => ({
     id: t.id,
     name: t.name,

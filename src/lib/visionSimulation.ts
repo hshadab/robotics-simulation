@@ -155,7 +155,7 @@ export function matchesColorFilter(
 export function detectBlobs(
   imageData: ImageData,
   colorFilter: ColorFilter,
-  minArea: number = 100
+  minArea = 100
 ): BlobDetection[] {
   const { width, height, data } = imageData;
 
@@ -177,11 +177,11 @@ export function detectBlobs(
   // Connected component labeling (simple flood fill)
   const labels = new Int32Array(width * height);
   let nextLabel = 1;
-  const blobs: Map<number, { pixels: Array<{ x: number; y: number }>; color: { r: number; g: number; b: number } }> = new Map();
+  const blobs = new Map<number, { pixels: { x: number; y: number }[]; color: { r: number; g: number; b: number } }>();
 
   const floodFill = (startX: number, startY: number, label: number) => {
-    const stack: Array<{ x: number; y: number }> = [{ x: startX, y: startY }];
-    const pixels: Array<{ x: number; y: number }> = [];
+    const stack: { x: number; y: number }[] = [{ x: startX, y: startY }];
+    const pixels: { x: number; y: number }[] = [];
     let totalR = 0, totalG = 0, totalB = 0;
 
     while (stack.length > 0) {
@@ -283,7 +283,7 @@ export function detectBlobs(
 export function detectMultipleColors(
   imageData: ImageData,
   colors: string[],
-  minArea: number = 100
+  minArea = 100
 ): Map<string, BlobDetection[]> {
   const results = new Map<string, BlobDetection[]>();
 
@@ -307,7 +307,7 @@ export function detectMultipleColors(
 /**
  * Simple edge detection (Sobel-like)
  */
-export function detectEdges(imageData: ImageData, threshold: number = 50): ImageData {
+export function detectEdges(imageData: ImageData, threshold = 50): ImageData {
   const { width, height, data } = imageData;
   const output = new ImageData(width, height);
 
@@ -459,14 +459,14 @@ export class VisionSimulator {
     return this.lastCapture;
   }
 
-  detectColor(colorName: string, minArea: number = 100): BlobDetection[] {
+  detectColor(colorName: string, minArea = 100): BlobDetection[] {
     if (!this.lastCapture) return [];
     const filter = COLOR_PRESETS[colorName];
     if (!filter) return [];
     return detectBlobs(this.lastCapture, filter, minArea);
   }
 
-  detectAllColors(minArea: number = 100): Map<string, BlobDetection[]> {
+  detectAllColors(minArea = 100): Map<string, BlobDetection[]> {
     if (!this.lastCapture) return new Map();
     return detectMultipleColors(
       this.lastCapture,

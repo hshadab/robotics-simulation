@@ -1171,13 +1171,13 @@ export async function copyCodeToClipboard(result: ExportResult): Promise<boolean
 /**
  * Get list of supported export targets for a robot
  */
-export function getSupportedExports(robotId: string): Array<{
+export function getSupportedExports(robotId: string): {
   kitId: string;
   kitName: string;
   languages: ExportLanguage[];
-}> {
+}[] {
   const mappings = DEFAULT_PIN_MAPPINGS.filter(m => m.robotId === robotId);
-  const results: Array<{ kitId: string; kitName: string; languages: ExportLanguage[] }> = [];
+  const results: { kitId: string; kitName: string; languages: ExportLanguage[] }[] = [];
 
   // Add LeRobot Python support for SO-101
   if (robotId === 'so-101') {

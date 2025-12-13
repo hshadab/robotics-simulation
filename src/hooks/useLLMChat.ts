@@ -176,7 +176,7 @@ export const useLLMChat = () => {
   );
 
   const executeArmSequence = useCallback(
-    async (sequence: Array<Record<string, number | string>>) => {
+    async (sequence: Record<string, number | string>[]) => {
       setIsAnimating(true);
       let currentJoints = { ...jointsRef.current };
 

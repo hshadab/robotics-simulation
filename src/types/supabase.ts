@@ -84,12 +84,8 @@ export interface Database {
         };
       };
     };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
+    Views: Record<never, never>;
+    Functions: Record<never, never>;
     Enums: {
       user_tier: 'free' | 'pro' | 'team' | 'enterprise';
     };

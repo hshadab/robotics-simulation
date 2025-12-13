@@ -81,7 +81,7 @@ export function isAIImageServiceConfigured(): boolean {
 /**
  * Generate an image using Gemini API
  */
-async function generateWithGemini(prompt: string, aspectRatio: string = '1:1'): Promise<GeneratedImage> {
+async function generateWithGemini(prompt: string, aspectRatio = '1:1'): Promise<GeneratedImage> {
   const apiKey = globalConfig.apiKey;
   if (!apiKey) {
     throw new Error('Gemini API key not configured');

@@ -84,7 +84,7 @@ export const MinimalTrainFlow: React.FC<MinimalTrainFlowProps> = ({ onOpenDrawer
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<{ intervalId: ReturnType<typeof setInterval> } | null>(null);
-  const recordedFramesRef = useRef<Array<{ timestamp: number; jointPositions: number[] }>>([]);
+  const recordedFramesRef = useRef<{ timestamp: number; jointPositions: number[] }[]>([]);
 
   // Store
   const { joints, selectedRobotId, spawnObject, objects, messages, isLLMLoading, isAnimating } = useAppStore();

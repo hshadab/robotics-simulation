@@ -34,7 +34,7 @@ export const DEFAULT_AUGMENTATION_CONFIG: AugmentationConfig = {
 /**
  * Generate Gaussian random number using Box-Muller transform
  */
-function gaussianRandom(mean: number = 0, std: number = 1): number {
+function gaussianRandom(mean = 0, std = 1): number {
   const u1 = Math.random();
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);

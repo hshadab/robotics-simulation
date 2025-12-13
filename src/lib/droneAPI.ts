@@ -116,7 +116,7 @@ export const createDroneAPI = (
      * Take off to specified altitude
      * @param altitude Target altitude in meters (default 0.3)
      */
-    async takeoff(altitude: number = 0.3): Promise<void> {
+    async takeoff(altitude = 0.3): Promise<void> {
       if (!getState().armed) {
         this.arm();
         await wait(500);
@@ -194,7 +194,7 @@ export const createDroneAPI = (
      * Move forward (pitch forward)
      * @param speed Speed factor 0-100
      */
-    forward(speed: number = 30): void {
+    forward(speed = 30): void {
       const pitch = Math.max(-30, Math.min(30, speed * 0.3));
       const state = getState();
       setState({
@@ -206,7 +206,7 @@ export const createDroneAPI = (
     /**
      * Move backward (pitch backward)
      */
-    backward(speed: number = 30): void {
+    backward(speed = 30): void {
       const pitch = -Math.max(-30, Math.min(30, speed * 0.3));
       const state = getState();
       setState({
@@ -218,7 +218,7 @@ export const createDroneAPI = (
     /**
      * Strafe left (roll left)
      */
-    left(speed: number = 30): void {
+    left(speed = 30): void {
       const roll = -Math.max(-30, Math.min(30, speed * 0.3));
       const state = getState();
       setState({
@@ -230,7 +230,7 @@ export const createDroneAPI = (
     /**
      * Strafe right (roll right)
      */
-    right(speed: number = 30): void {
+    right(speed = 30): void {
       const roll = Math.max(-30, Math.min(30, speed * 0.3));
       const state = getState();
       setState({
@@ -242,7 +242,7 @@ export const createDroneAPI = (
     /**
      * Rotate left (yaw)
      */
-    rotateLeft(speed: number = 30): void {
+    rotateLeft(speed = 30): void {
       const state = getState();
       const yawSpeed = speed * 0.5;
       setState({
@@ -254,7 +254,7 @@ export const createDroneAPI = (
     /**
      * Rotate right (yaw)
      */
-    rotateRight(speed: number = 30): void {
+    rotateRight(speed = 30): void {
       const state = getState();
       const yawSpeed = speed * 0.5;
       setState({
@@ -266,7 +266,7 @@ export const createDroneAPI = (
     /**
      * Go up (increase altitude)
      */
-    up(speed: number = 30): void {
+    up(speed = 30): void {
       const state = getState();
       const newThrottle = Math.min(100, state.throttle + speed * 0.5);
       setState({
@@ -278,7 +278,7 @@ export const createDroneAPI = (
     /**
      * Go down (decrease altitude)
      */
-    down(speed: number = 30): void {
+    down(speed = 30): void {
       const state = getState();
       const newThrottle = Math.max(0, state.throttle - speed * 0.5);
       setState({

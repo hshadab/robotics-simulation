@@ -7,7 +7,7 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox, Cylinder } from '@react-three/drei';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { WheeledRobotState, WheeledRobotConfig } from '../../types';
 import { WHEELED_ROBOT_CONFIG } from './defaults';
 

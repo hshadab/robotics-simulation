@@ -7,7 +7,7 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox, Cylinder, Sphere } from '@react-three/drei';
-import * as THREE from 'three';
+import type * as THREE from 'three';
 import type { DroneState, DroneConfig } from '../../types';
 import { DRONE_CONFIG } from './defaults';
 

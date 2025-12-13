@@ -54,10 +54,10 @@ export interface RodinJobStatus {
 }
 
 export interface RodinDownloadResult {
-  list: Array<{
+  list: {
     name: string;
     url: string;
-  }>;
+  }[];
 }
 
 // Use Vite proxy in development to bypass CORS
@@ -178,7 +178,7 @@ export async function waitForSession(
   config: RodinConfig,
   session: RodinSession,
   onProgress?: (status: string, progress: number) => void,
-  maxWaitMs: number = 300000
+  maxWaitMs = 300000
 ): Promise<RodinDownloadResult> {
   const startTime = Date.now();
   const pollInterval = 2000; // Rodin is faster, poll every 2s

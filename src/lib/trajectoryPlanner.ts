@@ -128,7 +128,7 @@ const maxJointDisplacement = (from: JointState, to: JointState): number => {
 export const calculateDuration = (
   from: JointState,
   to: JointState,
-  maxVelocity: number = 60 // degrees per second
+  maxVelocity = 60 // degrees per second
 ): number => {
   const displacement = maxJointDisplacement(from, to);
   const minDuration = displacement / maxVelocity;
@@ -238,7 +238,7 @@ export const sampleTrajectory = (
 export const calculateVelocities = (
   trajectory: Trajectory,
   time: number,
-  dt: number = 0.01
+  dt = 0.01
 ): JointState => {
   const before = sampleTrajectory(trajectory, time - dt / 2);
   const after = sampleTrajectory(trajectory, time + dt / 2);
@@ -259,7 +259,7 @@ export const calculateVelocities = (
 export const calculateAccelerations = (
   trajectory: Trajectory,
   time: number,
-  dt: number = 0.01
+  dt = 0.01
 ): JointState => {
   const velBefore = calculateVelocities(trajectory, time - dt / 2, dt);
   const velAfter = calculateVelocities(trajectory, time + dt / 2, dt);
@@ -279,12 +279,12 @@ export const calculateAccelerations = (
  */
 export class TrajectoryExecutor {
   private trajectory: Trajectory | null = null;
-  private startTime: number = 0;
+  private startTime = 0;
   private onUpdate: ((joints: JointState) => void) | null = null;
   private onComplete: (() => void) | null = null;
   private animationFrameId: number | null = null;
-  private isPaused: boolean = false;
-  private pausedTime: number = 0;
+  private isPaused = false;
+  private pausedTime = 0;
 
   /**
    * Start executing a trajectory

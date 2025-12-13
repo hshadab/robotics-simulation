@@ -45,9 +45,9 @@ export class StateSynchronizer<T> {
   private readonly dbName: string;
   private readonly storeName: string;
   private db: IDBDatabase | null = null;
-  private version: number = 0;
-  private pendingWrites: Map<string, T> = new Map();
-  private syncInProgress: boolean = false;
+  private version = 0;
+  private pendingWrites = new Map<string, T>();
+  private syncInProgress = false;
 
   constructor(options: {
     storageKey: string;

@@ -95,7 +95,7 @@ const FEATURED_DATASETS: DatasetInfo[] = [
 /**
  * Search HuggingFace Hub for LeRobot datasets
  */
-async function searchDatasets(query: string = 'lerobot'): Promise<DatasetInfo[]> {
+async function searchDatasets(query = 'lerobot'): Promise<DatasetInfo[]> {
   const searchQuery = encodeURIComponent(`lerobot ${query}`);
   const url = `${HF_API_BASE}/datasets?search=${searchQuery}&limit=30&sort=downloads&direction=-1`;
 

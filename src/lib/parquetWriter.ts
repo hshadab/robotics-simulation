@@ -28,17 +28,17 @@ export interface ParquetEpisodeData {
  * Arrow schema definition for LeRobot compatibility
  */
 export interface ArrowSchema {
-  fields: Array<{
+  fields: {
     name: string;
     type: string;
     listSize?: number;
-  }>;
+  }[];
 }
 
 /**
  * Create Arrow schema for LeRobot data
  */
-export function createArrowSchema(numJoints: number = 6): ArrowSchema {
+export function createArrowSchema(numJoints = 6): ArrowSchema {
   return {
     fields: [
       { name: 'observation.state', type: 'FixedSizeList<Float32>', listSize: numJoints },
@@ -184,20 +184,20 @@ if __name__ == '__main__':
  * Convert episodes to Parquet-compatible format
  */
 export function episodesToParquetFormat(
-  episodes: Array<{
-    frames: Array<{
+  episodes: {
+    frames: {
       timestamp: number;
       observation: { jointPositions: number[] };
       action: { jointTargets: number[] };
       done: boolean;
-    }>;
+    }[];
     metadata: {
       duration: number;
       success: boolean;
       task?: string;
     };
-  }>,
-  _fps: number = 30
+  }[],
+  _fps = 30
 ): ParquetEpisodeData {
   const data: ParquetEpisodeData = {
     'observation.state': [],

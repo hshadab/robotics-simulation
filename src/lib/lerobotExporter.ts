@@ -40,14 +40,12 @@ interface FeatureInfo {
   names?: string[] | null;
 }
 
-export interface LeRobotStats {
-  [key: string]: {
+export type LeRobotStats = Record<string, {
     min: number[];
     max: number[];
     mean: number[];
     std: number[];
-  };
-}
+  }>;
 
 interface LeRobotEpisodeMeta {
   episode_index: number;
@@ -150,7 +148,7 @@ const DEFAULT_FEATURES: Record<string, FeatureInfo> = {
 /**
  * Convert RoboSim episodes to LeRobot tabular format
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function episodesToTabular(episodes: Episode[], _fps: number): {
   rows: LeRobotRow[];
   stats: LeRobotStats;
@@ -255,8 +253,8 @@ function finalizeStats(stats: { min: number[]; max: number[]; sum: number[]; sum
 export function generateInfoJson(
   episodes: Episode[],
   robotId: string,
-  fps: number = 30,
-  hasVideo: boolean = false
+  fps = 30,
+  hasVideo = false
 ): LeRobotDatasetInfo {
   const totalFrames = episodes.reduce((sum, ep) => sum + ep.frames.length, 0);
   const features = ROBOT_FEATURES[robotId] || DEFAULT_FEATURES;
@@ -349,7 +347,7 @@ export function generateEpisodesJsonl(episodes: Episode[]): string {
  * Convert episodes to Parquet-compatible row format
  * Returns data that can be written to Parquet
  */
-export function episodesToParquetData(episodes: Episode[], fps: number = 30): {
+export function episodesToParquetData(episodes: Episode[], fps = 30): {
   columns: Record<string, unknown[]>;
   schema: Record<string, string>;
 } {
@@ -394,7 +392,7 @@ export function episodesToParquetData(episodes: Episode[], fps: number = 30): {
  * Since parquet-wasm is complex, we'll create a simpler format
  * that can be converted to Parquet later, or use Apache Arrow
  */
-export function createSimpleParquetBlob(episodes: Episode[], fps: number = 30): Blob {
+export function createSimpleParquetBlob(episodes: Episode[], fps = 30): Blob {
   const { columns } = episodesToParquetData(episodes, fps);
 
   // For now, export as JSON that matches Parquet column structure
@@ -488,7 +486,7 @@ export async function exportLeRobotDataset(
   episodes: Episode[],
   datasetName: string,
   robotId: string,
-  fps: number = 30,
+  fps = 30,
   videoBlobs?: Blob[]
 ): Promise<void> {
   // We'll use JSZip to create the archive
@@ -587,7 +585,7 @@ export async function exportLeRobotDataset(
 export function exportMetadataOnly(
   episodes: Episode[],
   robotId: string,
-  fps: number = 30
+  fps = 30
 ): {
   info: LeRobotDatasetInfo;
   stats: LeRobotStats;

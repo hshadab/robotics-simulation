@@ -143,7 +143,7 @@ function calculateErrorVector(current: [number, number, number], target: Vector3
  *
  * For a 6-DOF arm with 3D position, J is a 3x5 matrix (5 joints, ignoring gripper)
  */
-function computeJacobian(joints: JointState, delta: number = 0.1): number[][] {
+function computeJacobian(joints: JointState, delta = 0.1): number[][] {
   const numJoints = 5; // base, shoulder, elbow, wrist, wristRoll
   const numOutputs = 3; // x, y, z position
 
@@ -502,7 +502,7 @@ export function solveIK(
 export function solveIKMultiStart(
   target: IKTarget,
   currentJoints: JointState,
-  numStarts: number = 5,
+  numStarts = 5,
   config: Partial<IKConfig> = {}
 ): IKResult {
   const limits = getJointLimits();
@@ -563,7 +563,7 @@ export function calculateManipulability(joints: JointState): number {
 /**
  * Check if the current configuration is near a singularity
  */
-export function isNearSingularity(joints: JointState, threshold: number = 0.01): boolean {
+export function isNearSingularity(joints: JointState, threshold = 0.01): boolean {
   return calculateManipulability(joints) < threshold;
 }
 
@@ -575,7 +575,7 @@ export function isNearSingularity(joints: JointState, threshold: number = 0.01):
 export function generateIKTrajectory(
   startJoints: JointState,
   targetPosition: Vector3D,
-  numWaypoints: number = 10,
+  numWaypoints = 10,
   config: Partial<IKConfig> = {}
 ): { waypoints: JointState[]; success: boolean } {
   const startPos = calculateSO101GripperPosition(startJoints);

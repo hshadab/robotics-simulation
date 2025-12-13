@@ -206,7 +206,7 @@ const calculateIRSensors = (
   };
 };
 
-export const useSensorSimulation = (updateInterval: number = 50) => {
+export const useSensorSimulation = (updateInterval = 50) => {
   const joints = useAppStore(state => state.joints);
   const objects = useAppStore(state => state.objects);
   const setSensors = useAppStore(state => state.setSensors);

@@ -91,7 +91,7 @@ export const ChatRecordingPanel: React.FC = () => {
   const recorderRef = useRef<DatasetRecorder | null>(null);
   const videoRecorderRef = useRef<CanvasVideoRecorder | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const recordedFramesRef = useRef<Array<{ timestamp: number; jointPositions: number[] }>>([]);
+  const recordedFramesRef = useRef<{ timestamp: number; jointPositions: number[] }[]>([]);
   const lastMessageCountRef = useRef(0);
 
   // Get current robot state
@@ -127,13 +127,50 @@ export const ChatRecordingPanel: React.FC = () => {
     lastMessageCountRef.current = messages.length;
   }, [messages.length]);
 
+  // Stop recording an episode (moved before endSession to fix hook ordering)
+  const stopEpisodeRecording = useCallback(async (success = true) => {
+    if (!isRecordingEpisode || !recorderRef.current) return;
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Stop video recording
+    if (videoRecorderRef.current?.recording) {
+      await videoRecorderRef.current.stop();
+    }
+
+    // End episode
+    const taskName = currentInstruction?.split(' ').slice(0, 3).join('_') || 'chat_command';
+    const episode = recorderRef.current.endEpisode(success, taskName, currentInstruction || undefined);
+
+    // Calculate quality metrics
+    const metrics = calculateQualityMetrics(recordedFramesRef.current);
+
+    // Add to session
+    setCurrentSession(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        episodes: [...prev.episodes, episode],
+        qualityMetrics: [...prev.qualityMetrics, metrics],
+        totalCommands: prev.totalCommands + 1,
+      };
+    });
+
+    setIsRecordingEpisode(false);
+    setCurrentInstruction(null);
+    setFrameCount(0);
+  }, [isRecordingEpisode, currentInstruction]);
+
   // End recording session
   const endSession = useCallback(() => {
     if (isRecordingEpisode) {
       stopEpisodeRecording(false);
     }
     setSessionActive(false);
-  }, [isRecordingEpisode]);
+  }, [isRecordingEpisode, stopEpisodeRecording]);
 
   // Start recording an episode
   const startEpisodeRecording = useCallback((instruction: string) => {
@@ -170,43 +207,6 @@ export const ChatRecordingPanel: React.FC = () => {
       }
     }, 33); // ~30 fps
   }, [sessionActive, isRecordingEpisode, activeRobotType, selectedRobotId, recordVideo, getCurrentState, getJointPositions]);
-
-  // Stop recording an episode
-  const stopEpisodeRecording = useCallback(async (success: boolean = true) => {
-    if (!isRecordingEpisode || !recorderRef.current) return;
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    // Stop video recording
-    if (videoRecorderRef.current?.recording) {
-      await videoRecorderRef.current.stop();
-    }
-
-    // End episode
-    const taskName = currentInstruction?.split(' ').slice(0, 3).join('_') || 'chat_command';
-    const episode = recorderRef.current.endEpisode(success, taskName, currentInstruction || undefined);
-
-    // Calculate quality metrics
-    const metrics = calculateQualityMetrics(recordedFramesRef.current);
-
-    // Add to session
-    setCurrentSession(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        episodes: [...prev.episodes, episode],
-        qualityMetrics: [...prev.qualityMetrics, metrics],
-        totalCommands: prev.totalCommands + 1,
-      };
-    });
-
-    setIsRecordingEpisode(false);
-    setCurrentInstruction(null);
-    setFrameCount(0);
-  }, [isRecordingEpisode, currentInstruction]);
 
   // Watch for new chat messages and auto-record
   useEffect(() => {

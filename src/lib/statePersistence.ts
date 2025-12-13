@@ -287,7 +287,7 @@ export function importStateFromFile(file: File): Promise<SavedState> {
 export class AutoSaveManager {
   private intervalId: number | null = null;
   private getState: () => Omit<SavedState, 'id' | 'timestamp' | 'version' | 'name'>;
-  private enabled: boolean = false;
+  private enabled = false;
 
   constructor(
     getState: () => Omit<SavedState, 'id' | 'timestamp' | 'version' | 'name'>

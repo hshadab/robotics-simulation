@@ -242,11 +242,11 @@ export function applyVectorNoise(
  * Sensor lag buffer - stores historical values for delayed reading
  */
 export class LagBuffer<T> {
-  private buffer: Array<{ value: T; timestamp: number }> = [];
+  private buffer: { value: T; timestamp: number }[] = [];
   private lagMs: number;
   private jitterMs: number;
 
-  constructor(lagMs: number, jitterMs: number = 0) {
+  constructor(lagMs: number, jitterMs = 0) {
     this.lagMs = lagMs;
     this.jitterMs = jitterMs;
   }
@@ -283,7 +283,7 @@ export class LagBuffer<T> {
  * Drift model - gradual sensor drift over time
  */
 export class DriftModel {
-  private driftValue: number = 0;
+  private driftValue = 0;
   private driftRate: number;
   private maxDrift: number;
   private lastUpdate: number = performance.now();

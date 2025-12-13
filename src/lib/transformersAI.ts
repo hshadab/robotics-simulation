@@ -72,11 +72,11 @@ export async function detectObjects(
 
   const results = await detector(image, {
     threshold: options?.threshold ?? 0.5,
-  }) as Array<{
+  }) as {
     label: string;
     score: number;
     box: { xmin: number; ymin: number; xmax: number; ymax: number };
-  }>;
+  }[];
 
   return results.map((r) => ({
     label: r.label,
@@ -100,7 +100,7 @@ export async function classifyImage(
 
   const results = await classifier(image, {
     topk: options?.topK ?? 5,
-  }) as Array<{ label: string; score: number }>;
+  }) as { label: string; score: number }[];
 
   return results.map((r) => ({
     label: r.label,
@@ -121,7 +121,7 @@ export async function classifyImageZeroShot(
     'Xenova/clip-vit-base-patch32'
   );
 
-  const results = await classifier(image, candidateLabels) as Array<{ label: string; score: number }>;
+  const results = await classifier(image, candidateLabels) as { label: string; score: number }[];
 
   return results.map((r) => ({
     label: r.label,
@@ -190,13 +190,13 @@ export async function estimateDepth(
  */
 export async function segmentImage(
   image: HTMLImageElement | HTMLCanvasElement | ImageData | string
-): Promise<Array<{ label: string; score: number; mask: ImageData }>> {
+): Promise<{ label: string; score: number; mask: ImageData }[]> {
   const segmenter = await getPipeline(
     'image-segmentation',
     'Xenova/detr-resnet-50-panoptic'
   );
 
-  const results = await segmenter(image) as Array<{ label: string; score: number; mask: ImageData }>;
+  const results = await segmenter(image) as { label: string; score: number; mask: ImageData }[];
 
   return results;
 }
@@ -219,7 +219,7 @@ export async function interpretCommand(
 
   const result = await generator(prompt, {
     max_new_tokens: 100,
-  }) as Array<{ generated_text: string }>;
+  }) as { generated_text: string }[];
 
   return result[0]?.generated_text || '';
 }
@@ -250,9 +250,9 @@ export function cosineSimilarity(a: number[], b: number[]): number {
  */
 export function findSimilar(
   query: number[],
-  candidates: Array<{ id: string; embedding: number[] }>,
+  candidates: { id: string; embedding: number[] }[],
   topK = 5
-): Array<{ id: string; score: number }> {
+): { id: string; score: number }[] {
   const scored = candidates.map((c) => ({
     id: c.id,
     score: cosineSimilarity(query, c.embedding),
@@ -269,7 +269,7 @@ export function findSimilar(
 export async function preloadModels(
   onProgress?: (model: string, progress: number) => void
 ): Promise<void> {
-  const models: Array<[string, string]> = [
+  const models: [string, string][] = [
     ['object-detection', 'Xenova/detr-resnet-50'],
     ['image-classification', 'Xenova/vit-base-patch16-224'],
   ];

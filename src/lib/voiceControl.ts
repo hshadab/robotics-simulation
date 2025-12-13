@@ -78,7 +78,7 @@ export class VoiceControlManager {
   private state: VoiceControlState = 'inactive';
   private commandHandlers: VoiceCommandHandler[] = [];
   private stateHandlers: VoiceStateHandler[] = [];
-  private isAwake: boolean = false;
+  private isAwake = false;
   private wakeTimeout: ReturnType<typeof setTimeout> | null = null;
   private selectedVoice: SpeechSynthesisVoice | null = null;
 

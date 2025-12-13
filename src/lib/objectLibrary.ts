@@ -421,11 +421,11 @@ export interface ScenePreset {
   id: string;
   name: string;
   description: string;
-  objects: Array<{
+  objects: {
     templateId: string;
     position: [number, number, number];
     rotation?: [number, number, number];
-  }>;
+  }[];
 }
 
 export const SCENE_PRESETS: ScenePreset[] = [

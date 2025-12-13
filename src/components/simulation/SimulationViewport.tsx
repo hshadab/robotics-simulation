@@ -39,7 +39,7 @@ export const SimulationViewport: React.FC = () => {
   };
 
   const toggleCameraPosition = () => {
-    const positions: Array<'gripper' | 'base' | 'overhead'> = ['gripper', 'base', 'overhead'];
+    const positions: ('gripper' | 'base' | 'overhead')[] = ['gripper', 'base', 'overhead'];
     const currentIndex = positions.indexOf(cameraPosition);
     setCameraPosition(positions[(currentIndex + 1) % positions.length]);
   };

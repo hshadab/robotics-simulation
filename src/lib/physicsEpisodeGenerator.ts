@@ -108,9 +108,9 @@ export class PhysicsEpisodeGenerator {
   private config: PhysicsGenerationConfig;
   private videoRecorder: CanvasVideoRecorder | null = null;
   private frames: Frame[] = [];
-  private startTime: number = 0;
-  private isRunning: boolean = false;
-  private shouldStop: boolean = false;
+  private startTime = 0;
+  private isRunning = false;
+  private shouldStop = false;
 
   constructor(config: PhysicsGenerationConfig) {
     this.config = config;
@@ -437,12 +437,12 @@ export function generatePickPlacePlan(
 /**
  * Get available scene presets for generation
  */
-export function getAvailableScenePresets(): Array<{
+export function getAvailableScenePresets(): {
   id: string;
   name: string;
   description: string;
   objectCount: number;
-}> {
+}[] {
   return SCENE_PRESETS.map(preset => ({
     id: preset.id,
     name: preset.name,

@@ -74,9 +74,9 @@ Object.defineProperty(window, 'indexedDB', {
 
 // Mock ResizeObserver
 class ResizeObserverMock {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() { /* noop */ }
+  unobserve() { /* noop */ }
+  disconnect() { /* noop */ }
 }
 
 Object.defineProperty(window, 'ResizeObserver', {
@@ -89,10 +89,10 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: () => {},
-    removeListener: () => {},
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addListener: () => { /* noop */ },
+    removeListener: () => { /* noop */ },
+    addEventListener: () => { /* noop */ },
+    removeEventListener: () => { /* noop */ },
     dispatchEvent: () => false,
   }),
 });

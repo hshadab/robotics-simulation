@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Hand, Camera, CameraOff, RefreshCw } from 'lucide-react';
 import { Button } from '../common';
 import { useAppStore } from '../../stores/useAppStore';
-import { MediaPipeVision, getMediaPipeVision } from '../../lib/mediaPipeVision';
+import type { MediaPipeVision} from '../../lib/mediaPipeVision';
+import { getMediaPipeVision } from '../../lib/mediaPipeVision';
 
 export const HandTrackingPanel: React.FC = () => {
   const { setJoints, activeRobotType } = useAppStore();

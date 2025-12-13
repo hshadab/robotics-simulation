@@ -22,7 +22,7 @@ interface UseCodeCopilotOptions {
 export function useCodeCopilot(options: UseCodeCopilotOptions = {}) {
   const { enabled = true } = options;
   const { addConsoleMessage } = useAppStore();
-  const disposablesRef = useRef<Array<{ dispose: () => void }>>([]);
+  const disposablesRef = useRef<{ dispose: () => void }[]>([]);
 
   /**
    * Register completion provider with Monaco

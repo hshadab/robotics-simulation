@@ -75,7 +75,7 @@ export const createWheeledRobotAPI = (
      * Move forward at specified speed
      * @param speed Speed 0-255 (default 150)
      */
-    forward(speed: number = 150): void {
+    forward(speed = 150): void {
       const s = Math.abs(speed);
       setWheels(s, s);
     },
@@ -84,7 +84,7 @@ export const createWheeledRobotAPI = (
      * Move backward at specified speed
      * @param speed Speed 0-255 (default 150)
      */
-    backward(speed: number = 150): void {
+    backward(speed = 150): void {
       const s = -Math.abs(speed);
       setWheels(s, s);
     },
@@ -93,7 +93,7 @@ export const createWheeledRobotAPI = (
      * Turn left (pivot)
      * @param speed Speed 0-255 (default 150)
      */
-    turnLeft(speed: number = 150): void {
+    turnLeft(speed = 150): void {
       const s = Math.abs(speed);
       setWheels(-s, s);
     },
@@ -102,7 +102,7 @@ export const createWheeledRobotAPI = (
      * Turn right (pivot)
      * @param speed Speed 0-255 (default 150)
      */
-    turnRight(speed: number = 150): void {
+    turnRight(speed = 150): void {
       const s = Math.abs(speed);
       setWheels(s, -s);
     },
@@ -112,7 +112,7 @@ export const createWheeledRobotAPI = (
      * @param speed Base speed
      * @param ratio Turn ratio 0-1 (0 = straight, 1 = pivot)
      */
-    curveLeft(speed: number = 150, ratio: number = 0.5): void {
+    curveLeft(speed = 150, ratio = 0.5): void {
       const s = Math.abs(speed);
       const r = Math.max(0, Math.min(1, ratio));
       setWheels(s * (1 - r), s);
@@ -123,7 +123,7 @@ export const createWheeledRobotAPI = (
      * @param speed Base speed
      * @param ratio Turn ratio 0-1
      */
-    curveRight(speed: number = 150, ratio: number = 0.5): void {
+    curveRight(speed = 150, ratio = 0.5): void {
       const s = Math.abs(speed);
       const r = Math.max(0, Math.min(1, ratio));
       setWheels(s, s * (1 - r));
@@ -201,11 +201,11 @@ export const createWheeledRobotAPI = (
      * @param steps Number of steps
      */
     async servoSweep(
-      startAngle: number = -90,
-      endAngle: number = 90,
-      steps: number = 9
-    ): Promise<Array<{ angle: number; distance: number }>> {
-      const readings: Array<{ angle: number; distance: number }> = [];
+      startAngle = -90,
+      endAngle = 90,
+      steps = 9
+    ): Promise<{ angle: number; distance: number }[]> {
+      const readings: { angle: number; distance: number }[] = [];
       const angleStep = (endAngle - startAngle) / (steps - 1);
 
       for (let i = 0; i < steps; i++) {
@@ -248,7 +248,7 @@ export const createWheeledRobotAPI = (
      * Check if path ahead is clear
      * @param threshold Distance threshold in cm
      */
-    isPathClear(threshold: number = 20): boolean {
+    isPathClear(threshold = 20): boolean {
       return this.readUltrasonic() > threshold;
     },
 
@@ -335,7 +335,7 @@ export const runWheeledRobotCode = async (
     options.onStart?.();
 
     // Create async function with robot API
-    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    const AsyncFunction = Object.getPrototypeOf(async function () { /* get constructor */ }).constructor;
     const userFunction = new AsyncFunction(
       'robot',
       'forward',

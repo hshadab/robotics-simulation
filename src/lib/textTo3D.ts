@@ -35,13 +35,13 @@ export interface Generated3DObject {
 }
 
 // Object type mappings based on keywords
-const OBJECT_MAPPINGS: Array<{
+const OBJECT_MAPPINGS: {
   keywords: string[];
   generator: (desc: string, style: string) => THREE.Mesh | THREE.Group;
   baseScale: number;
   mass: number;
   grabbable: boolean;
-}> = [
+}[] = [
   {
     keywords: ['ball', 'sphere', 'orb', 'marble'],
     generator: createSphere,

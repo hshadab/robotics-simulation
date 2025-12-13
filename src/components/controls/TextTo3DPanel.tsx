@@ -59,7 +59,7 @@ const PRESET_OBJECTS = [
   { label: 'Orange Cone', description: 'orange traffic cone' },
 ];
 
-const STYLE_OPTIONS: Array<{ value: Text3DRequest['style']; label: string }> = [
+const STYLE_OPTIONS: { value: Text3DRequest['style']; label: string }[] = [
   { value: 'realistic', label: 'Realistic' },
   { value: 'cartoon', label: 'Cartoon' },
   { value: 'low-poly', label: 'Low Poly' },

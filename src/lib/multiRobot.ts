@@ -168,7 +168,7 @@ export function calculateFormation(
   count: number,
   pattern: 'line' | 'grid' | 'circle' | 'v-formation',
   center: Vector3D = { x: 0, y: 0, z: 0 },
-  spacing: number = 0.3
+  spacing = 0.3
 ): Vector3D[] {
   const positions: Vector3D[] = [];
 
@@ -240,9 +240,9 @@ export function calculateDistance(a: Vector3D, b: Vector3D): number {
  */
 export function checkCollisions(
   robots: RobotInstance[],
-  minDistance: number = 0.15
-): Array<{ robot1: string; robot2: string; distance: number }> {
-  const collisions: Array<{ robot1: string; robot2: string; distance: number }> = [];
+  minDistance = 0.15
+): { robot1: string; robot2: string; distance: number }[] {
+  const collisions: { robot1: string; robot2: string; distance: number }[] = [];
 
   for (let i = 0; i < robots.length; i++) {
     for (let j = i + 1; j < robots.length; j++) {
@@ -264,10 +264,10 @@ export function checkCollisions(
  * Multi-robot state manager
  */
 export class MultiRobotManager {
-  private robots: Map<string, RobotInstance> = new Map();
+  private robots = new Map<string, RobotInstance>();
   private config: MultiRobotConfig;
   private activeRobotId: string | null = null;
-  private listeners: Set<(robots: RobotInstance[]) => void> = new Set();
+  private listeners = new Set<(robots: RobotInstance[]) => void>();
 
   constructor(config: Partial<MultiRobotConfig> = {}) {
     this.config = { ...DEFAULT_MULTI_ROBOT_CONFIG, ...config };
@@ -375,7 +375,7 @@ export class MultiRobotManager {
   /**
    * Check for collisions
    */
-  checkCollisions(): Array<{ robot1: string; robot2: string; distance: number }> {
+  checkCollisions(): { robot1: string; robot2: string; distance: number }[] {
     if (!this.config.collisionDetection) return [];
     return checkCollisions(this.getRobots());
   }

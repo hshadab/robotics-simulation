@@ -105,10 +105,10 @@ export class SerialConnection {
   private port: SerialPort | null = null;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
-  private readLoop: boolean = false;
+  private readLoop = false;
   private callbacks: SerialCallbacks = {};
   private protocol: ProtocolType = 'json';
-  private lineBuffer: string = '';
+  private lineBuffer = '';
 
   private _state: ConnectionState = 'disconnected';
   private _lastError: Error | null = null;

@@ -331,4 +331,4 @@ export const CHALLENGES: Challenge[] = [
   },
 ];
 
-export const DEFAULT_ENVIRONMENT: string = 'empty';
+export const DEFAULT_ENVIRONMENT = 'empty';

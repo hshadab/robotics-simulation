@@ -53,7 +53,7 @@ const RobotArmSVG: React.FC<{ className?: string }> = ({ className }) => (
 // Feature tabs configuration
 type FeatureTab = 'quicktrain' | 'chat' | 'policies' | 'datasets' | 'control' | 'export' | 'voice' | 'vision' | 'copilot' | 'text3d' | 'image3d' | 'autogen' | 'challenges' | 'augment' | 'langlearn' | 'objects' | 'llmphysics';
 
-const FEATURE_TABS: Array<{
+const FEATURE_TABS: {
   id: FeatureTab;
   label: string;
   icon: React.ReactNode;
@@ -62,7 +62,7 @@ const FEATURE_TABS: Array<{
   benefits: string[];
   howTo: string[];
   color: string;
-}> = [
+}[] = [
   {
     id: 'quicktrain',
     label: 'Quick Train',

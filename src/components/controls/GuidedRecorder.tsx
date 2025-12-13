@@ -342,7 +342,7 @@ export const GuidedRecorderPanel: React.FC = () => {
   // Quality metrics
   const [currentMetrics, setCurrentMetrics] = useState<EpisodeQualityMetrics | null>(null);
   const [episodeMetrics, setEpisodeMetrics] = useState<EpisodeQualityMetrics[]>([]);
-  const recordedFramesRef = useRef<Array<{ timestamp: number; jointPositions: number[] }>>([]);
+  const recordedFramesRef = useRef<{ timestamp: number; jointPositions: number[] }[]>([]);
 
   // UI state
   const [showSettings, setShowSettings] = useState(false);

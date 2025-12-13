@@ -34,7 +34,7 @@ export interface CompletionResult {
 
 export interface ExplanationResult {
   explanation: string;
-  codeBlocks: Array<{ code: string; description: string }>;
+  codeBlocks: { code: string; description: string }[];
 }
 
 export interface FixSuggestion {

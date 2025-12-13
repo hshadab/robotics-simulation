@@ -53,7 +53,7 @@ export async function importLeRobotZip(
   }
 
   // Read meta/episodes.jsonl
-  const episodesMeta: Array<{ episode_index: number; tasks: string; length: number }> = [];
+  const episodesMeta: { episode_index: number; tasks: string; length: number }[] = [];
   const episodesFile = zip.file('meta/episodes.jsonl');
   if (episodesFile) {
     const episodesText = await episodesFile.async('text');

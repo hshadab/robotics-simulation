@@ -7,7 +7,8 @@
 import React from 'react';
 import { Lock, Sparkles, ArrowRight } from 'lucide-react';
 import { useFeatureGate } from '../../hooks/useFeatureGate';
-import { TIER_LIMITS, type UserTier } from '../../lib/supabase';
+import type { TIER_LIMITS} from '../../lib/supabase';
+import { type UserTier } from '../../lib/supabase';
 
 type Feature = keyof typeof TIER_LIMITS.free.features;
 

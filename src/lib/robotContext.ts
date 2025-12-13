@@ -70,7 +70,7 @@ type EventCallback = (event: RobotEvent) => void;
 
 class RobotContextManager {
   private state: RobotContextState;
-  private listeners: Map<string, EventCallback[]> = new Map();
+  private listeners = new Map<string, EventCallback[]>();
   private allListeners: EventCallback[] = [];
 
   constructor() {

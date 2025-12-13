@@ -143,7 +143,7 @@ export function isModuleLoaded(module: 'transformers' | 'onnx' | 'mediaPipe'): b
  * Preload modules in the background (call after initial render)
  */
 export async function preloadMLModules(
-  modules: Array<'transformers' | 'onnx' | 'mediaPipe'> = []
+  modules: ('transformers' | 'onnx' | 'mediaPipe')[] = []
 ): Promise<void> {
   const promises = modules.map(async module => {
     try {

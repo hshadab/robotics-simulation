@@ -197,7 +197,7 @@ export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
   }, []);
 
   // Handle image selection - supports adding multiple images
-  const handleImageSelect = useCallback((file: File, addToExisting: boolean = false) => {
+  const handleImageSelect = useCallback((file: File, addToExisting = false) => {
     setError(null);
     setGeneratedObject(null);
 
@@ -250,7 +250,7 @@ export const ImageTo3DPanel: React.FC<ImageTo3DPanelProps> = ({
   }, [handleImageSelect]);
 
   // Handle file input change - supports multiple files
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, addToExisting: boolean = false) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, addToExisting = false) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       if (addToExisting) {

@@ -437,7 +437,7 @@ function parseSimpleYaml(text: string): PolicyConfig {
   // This handles basic key-value pairs and nested objects
   const config: Record<string, unknown> = {};
   const lines = text.split('\n');
-  const stack: Array<{ obj: Record<string, unknown>; indent: number }> = [
+  const stack: { obj: Record<string, unknown>; indent: number }[] = [
     { obj: config, indent: -1 }
   ];
 

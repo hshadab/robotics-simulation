@@ -327,10 +327,10 @@ export const TASK_TEMPLATES: TaskTemplate[] = [
  * Calculate episode quality metrics from recorded frames
  */
 export function calculateQualityMetrics(
-  frames: Array<{
+  frames: {
     timestamp: number;
     jointPositions: number[];
-  }>,
+  }[],
   taskTemplate?: TaskTemplate
 ): EpisodeQualityMetrics {
   if (frames.length < 2) {

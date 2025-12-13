@@ -14,20 +14,20 @@ interface LearnMorePageProps {
 // Detailed workflow use cases with LeRobot/HuggingFace integration
 type UseCaseTab = 'collect' | 'train' | 'deploy' | 'evaluate';
 
-const USE_CASE_WORKFLOWS: Array<{
+const USE_CASE_WORKFLOWS: {
   id: UseCaseTab;
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   description: string;
-  steps: Array<{
+  steps: {
     step: string;
     title: string;
     description: string;
     code?: string;
-  }>;
+  }[];
   color: string;
-}> = [
+}[] = [
   {
     id: 'collect',
     icon: <Database className="w-6 h-6" />,

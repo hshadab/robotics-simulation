@@ -40,10 +40,10 @@ export interface CSMSession {
   _id: string;
   status: 'incomplete' | 'pending' | 'complete' | 'failed';
   output?: {
-    meshes: Array<{
+    meshes: {
       format: string;
       url: string;
-    }>;
+    }[];
   };
   error_code?: string;
   status_message?: string;
@@ -111,7 +111,7 @@ export async function waitForSession(
   config: CSMConfig,
   sessionId: string,
   onProgress?: (status: string, elapsed: number) => void,
-  maxWaitMs: number = 600000 // 10 minutes - CSM can be slow
+  maxWaitMs = 600000 // 10 minutes - CSM can be slow
 ): Promise<CSMSession> {
   const startTime = Date.now();
   const pollInterval = 3000;

@@ -44,7 +44,7 @@ export function useTimeout(callback: () => void, delay: number | null) {
 /**
  * Hook for managing animation frames with automatic cleanup
  */
-export function useAnimationFrame(callback: (deltaTime: number) => void, isRunning: boolean = true) {
+export function useAnimationFrame(callback: (deltaTime: number) => void, isRunning = true) {
   const requestRef = useRef<number | null>(null);
   const previousTimeRef = useRef<number | null>(null);
   const callbackRef = useRef(callback);

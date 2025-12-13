@@ -215,7 +215,7 @@ function convertToLeRobotFormat(
   statsJson: string;
   episodesJsonl: string;
   tasksJsonl: string;
-  episodeDataFiles: Array<{ filename: string; content: string }>;
+  episodeDataFiles: { filename: string; content: string }[];
 } {
   const totalFrames = episodes.reduce((sum, ep) => sum + ep.frames.length, 0);
 

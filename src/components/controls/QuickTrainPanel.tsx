@@ -79,7 +79,7 @@ export const QuickTrainPanel: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<DatasetRecorder | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const recordedFramesRef = useRef<Array<{ timestamp: number; jointPositions: number[] }>>([]);
+  const recordedFramesRef = useRef<{ timestamp: number; jointPositions: number[] }[]>([]);
 
   // Store access
   const {
@@ -232,7 +232,7 @@ export const QuickTrainPanel: React.FC = () => {
     }, 33);
   }, [state.isRecording, activeRobotType, selectedRobotId, getCurrentState, getJointPositions]);
 
-  const stopRecording = useCallback((success: boolean = true, instruction?: string) => {
+  const stopRecording = useCallback((success = true, instruction?: string) => {
     if (!state.isRecording || !recorderRef.current) return;
 
     if (intervalRef.current) {

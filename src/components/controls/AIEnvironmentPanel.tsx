@@ -76,7 +76,7 @@ export const AIEnvironmentPanel: React.FC = () => {
 
   // Scene integration callbacks (to be connected to 3D scene)
   const [appliedBackground, setAppliedBackground] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [_appliedFloorTexture, setAppliedFloorTexture] = useState<string | null>(null);
 
   // Save API key

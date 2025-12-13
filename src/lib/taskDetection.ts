@@ -35,7 +35,7 @@ export interface TaskGoal {
   placeZone?: { x: number; y: number; z: number; radius: number };
 
   // For trajectory following
-  trajectory?: Array<{ x: number; y: number; z: number }>;
+  trajectory?: { x: number; y: number; z: number }[];
   trajectoryTolerance?: number;
 
   // Custom success function
@@ -58,7 +58,7 @@ export interface TaskState {
   endEffectorPosition: { x: number; y: number; z: number };
   gripperClosed: boolean;
   elapsedTime: number;
-  objectPositions?: Array<{ id: string; x: number; y: number; z: number }>;
+  objectPositions?: { id: string; x: number; y: number; z: number }[];
 }
 
 /**

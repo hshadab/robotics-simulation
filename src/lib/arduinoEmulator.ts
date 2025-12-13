@@ -43,7 +43,7 @@ export class ArduinoEmulator {
   private serialOutput = '';
   private pinStates: Record<number, PinState> = {};
   private pwmValues: Record<number, number> = {};
-  private servoStates: Map<number, ServoState> = new Map();
+  private servoStates = new Map<number, ServoState>();
 
   private onSerialOutput?: (char: string) => void;
   private onPinChange?: (pin: number, state: PinState) => void;

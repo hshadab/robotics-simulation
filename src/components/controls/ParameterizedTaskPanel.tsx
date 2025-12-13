@@ -134,7 +134,7 @@ export const ParameterizedTaskPanel: React.FC = () => {
 
   // Run the task with current or randomized parameters
   const handleRunTask = useCallback(
-    (useRandomization: boolean = false) => {
+    (useRandomization = false) => {
       if (!selectedTemplate) return;
 
       // Create template with updated randomize flags

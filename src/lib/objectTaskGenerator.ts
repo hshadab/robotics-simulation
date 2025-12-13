@@ -170,8 +170,8 @@ function generateInspectTemplate(object: Generated3DObject): ParameterizedTaskTe
 
 export function estimateTrainingEpisodes(
   templates: ParameterizedTaskTemplate[],
-  episodesPerTemplate: number = 50,
-  augmentationMultiplier: number = 5
+  episodesPerTemplate = 50,
+  augmentationMultiplier = 5
 ): { baseEpisodes: number; augmentedEpisodes: number; totalEpisodes: number; estimatedTrainingTime: string } {
   const baseEpisodes = templates.length * episodesPerTemplate;
   const augmentedEpisodes = baseEpisodes * augmentationMultiplier;

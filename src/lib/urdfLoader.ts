@@ -3,8 +3,7 @@
  * Provides Three.js integration for loading and manipulating URDF robot models
  */
 
-import URDFLoader from 'urdf-loader';
-import type { URDFRobot, URDFJoint, URDFLink } from 'urdf-loader';
+import URDFLoader, { type URDFRobot, type URDFJoint, type URDFLink } from 'urdf-loader';
 import * as THREE from 'three';
 
 export type { URDFRobot, URDFJoint, URDFLink };

@@ -170,7 +170,7 @@ export const DatasetPlayerPanel: React.FC = () => {
         video.playbackRate = playbackSpeed;
         if (video.paused) {
           video.currentTime = frameTime;
-          video.play().catch(() => {});
+          video.play().catch(() => { /* ignore autoplay errors */ });
         }
       } else {
         video.pause();

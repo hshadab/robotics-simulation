@@ -85,7 +85,7 @@ export interface URDFRobot {
 
 // Parser class
 export class URDFParser {
-  private materials: Map<string, URDFMaterial> = new Map();
+  private materials = new Map<string, URDFMaterial>();
 
   /**
    * Parse URDF XML string into robot structure

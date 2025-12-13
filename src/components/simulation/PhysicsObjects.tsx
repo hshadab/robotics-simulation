@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, Suspense, useState, useMemo, useCallback } from 'react';
-import { RigidBody, CuboidCollider, BallCollider, CylinderCollider, ConvexHullCollider, RapierRigidBody } from '@react-three/rapier';
+import type { RapierRigidBody } from '@react-three/rapier';
+import { RigidBody, CuboidCollider, BallCollider, CylinderCollider, ConvexHullCollider } from '@react-three/rapier';
 import { RoundedBox, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { SimObject, TargetZone } from '../../types';

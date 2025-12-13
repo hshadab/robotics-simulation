@@ -3,10 +3,10 @@ import { createLogger, configureLogger, addLogHandler, getLogConfig, loggers } f
 
 describe('logger', () => {
   const consoleSpy = {
-    log: vi.spyOn(console, 'log').mockImplementation(() => {}),
-    debug: vi.spyOn(console, 'debug').mockImplementation(() => {}),
-    warn: vi.spyOn(console, 'warn').mockImplementation(() => {}),
-    error: vi.spyOn(console, 'error').mockImplementation(() => {}),
+    log: vi.spyOn(console, 'log').mockImplementation(() => undefined),
+    debug: vi.spyOn(console, 'debug').mockImplementation(() => undefined),
+    warn: vi.spyOn(console, 'warn').mockImplementation(() => undefined),
+    error: vi.spyOn(console, 'error').mockImplementation(() => undefined),
   };
 
   beforeEach(() => {

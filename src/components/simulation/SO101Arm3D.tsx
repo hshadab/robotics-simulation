@@ -8,7 +8,8 @@ import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import URDFLoader from 'urdf-loader';
-import { RigidBody, CuboidCollider, CylinderCollider, RapierRigidBody } from '@react-three/rapier';
+import type { RapierRigidBody } from '@react-three/rapier';
+import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier';
 import type { JointState } from '../../types';
 import { SO101_DIMS, calculateJointPositions } from './SO101Kinematics';
 

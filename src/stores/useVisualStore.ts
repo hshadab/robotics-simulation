@@ -10,7 +10,7 @@ import {
   DEFAULT_DOMAIN_CONFIG,
   randomizeDomainConfig,
   applyLightingPreset,
-  LIGHTING_PRESETS,
+  type LIGHTING_PRESETS,
   type DomainRandomizationConfig,
   type LightingConfig,
   type MaterialConfig,

@@ -55,12 +55,12 @@ export interface ChunkedEpisode {
 export class ChunkedEpisodeRecorder {
   private currentChunk: RecordingFrame[] = [];
   private chunks: EpisodeChunk[] = [];
-  private episodeId: string = '';
-  private startTime: number = 0;
-  private frameCount: number = 0;
-  private chunkIndex: number = 0;
-  private chunkStartTimestamp: number = 0;
-  private isRecording: boolean = false;
+  private episodeId = '';
+  private startTime = 0;
+  private frameCount = 0;
+  private chunkIndex = 0;
+  private chunkStartTimestamp = 0;
+  private isRecording = false;
   private maxChunkSize: number;
   private onChunkComplete?: (chunk: EpisodeChunk) => void;
 
@@ -75,7 +75,7 @@ export class ChunkedEpisodeRecorder {
   /**
    * Start a new recording
    */
-  start(task: string = 'default'): void {
+  start(task = 'default'): void {
     this.episodeId = generateSecureId('ep');
     this.startTime = Date.now();
     this.chunkStartTimestamp = 0;

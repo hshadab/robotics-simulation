@@ -314,7 +314,7 @@ export interface MultiCameraFrame {
 
 export class MultiCameraRecorder {
   private config: MultiCameraConfig;
-  private recorders: Map<CameraView, CanvasVideoRecorder> = new Map();
+  private recorders = new Map<CameraView, CanvasVideoRecorder>();
   private frames: MultiCameraFrame[] = [];
   private isRecording = false;
   private startTime = 0;

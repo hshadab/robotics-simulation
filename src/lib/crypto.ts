@@ -11,7 +11,7 @@
  * @param length - Length of the random portion (default: 16)
  * @returns A secure unique identifier
  */
-export function generateSecureId(prefix: string = '', length: number = 16): string {
+export function generateSecureId(prefix = '', length = 16): string {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
   const randomPart = Array.from(array)
@@ -51,7 +51,7 @@ export function generateUUID(): string {
  * @param length - Length of the ID (default: 8)
  * @returns A short alphanumeric ID
  */
-export function generateShortId(length: number = 8): string {
+export function generateShortId(length = 8): string {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);

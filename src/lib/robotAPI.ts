@@ -34,7 +34,7 @@ export interface ConsoleMessage {
 // Animation helper - smoothly animate to target joints
 const animateToJoints = (
   targetJoints: Partial<JointState>,
-  duration: number = 500
+  duration = 500
 ): Promise<void> => {
   return new Promise((resolve) => {
     const store = useAppStore.getState();
@@ -71,7 +71,7 @@ const animateToJoints = (
 const calculateDuration = (
   current: number,
   target: number,
-  speed: number = 1
+  speed = 1
 ): number => {
   const distance = Math.abs(target - current);
   const baseDuration = 300; // minimum duration
@@ -103,7 +103,7 @@ export const createRobotAPI = (
      * @param angle - Target angle in degrees (or percentage for gripper)
      * @param speed - Movement speed multiplier (default: 1)
      */
-    async moveJoint(joint: string, angle: number, speed: number = 1): Promise<void> {
+    async moveJoint(joint: string, angle: number, speed = 1): Promise<void> {
       checkStopped();
       const store = useAppStore.getState();
       const currentAngle = store.joints[joint as keyof JointState];
@@ -122,7 +122,7 @@ export const createRobotAPI = (
      * @param joints - Object with joint names and target angles
      * @param speed - Movement speed multiplier (default: 1)
      */
-    async moveJoints(joints: Partial<JointState>, speed: number = 1): Promise<void> {
+    async moveJoints(joints: Partial<JointState>, speed = 1): Promise<void> {
       checkStopped();
       const store = useAppStore.getState();
 
